@@ -71,4 +71,7 @@ __pypackages__/
 
 # End of https://www.toptal.com/developers/gitignore/api/pythonvanilla
 
+# jupyter
+.ipynb_checkpoints/
+
 # synced notebooks:
