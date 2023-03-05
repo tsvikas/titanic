@@ -6,7 +6,16 @@ authors = ["Tsvika S <tsvikas@dell>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
+numpy = "<1.24"  # 1.24 n.w.w seaborn 0.12.2
 python = "^3.10"
+pandas = "^1.5.3"
+matplotlib = "^3.7.1"
+tqdm = "^4.65.0"
+seaborn = "^0.12.2"
+missingno = "^0.5.2"
+scikit-learn = "^1.2.1"
+xgboost = "^1.7.4"
+mlxtend = "^0.21.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.0.0"
