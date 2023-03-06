@@ -27,7 +27,6 @@ import matplotlib.pyplot as plt
 import missingno as msno
 import pandas as pd
 import seaborn as sns
-from IPython.display import display
 
 from titanic import add_features, compare_col, create_axs, expand_cabin
 
@@ -51,43 +50,67 @@ f"train_size: {len(kaggle_train_df)}, test_size: {len(kaggle_test_df)}"
 
 f"survived: {kaggle_train_df.Survived.mean():.1%}, not-survived: {1 - kaggle_train_df.Survived.mean():.1%}"
 
+
 # ### histograms
 
-axs = create_axs()
-for col in kaggle_data:
-    if pd.api.types.is_numeric_dtype(kaggle_data[col]):
-        kaggle_data[col].groupby("src").plot.hist(
-            density=True,
-            ax=next(axs),
-            bins=range(10)
-            if col in ["Parch", "SibSp"]
-            else range(0, 100, 5)
-            if col in ["Age"]
-            else 10,
-            title=col,
-            legend=True,
-            alpha=0.5,
-        )
-    else:
-        col_df = kaggle_data.groupby(["src", col]).size().unstack(0, fill_value=0)
-        if len(col_df) > 10:
-            print(
-                {
-                    "col": col,
-                    "n_unique": len(col_df),
-                }
-            )
-            print(
-                col_df.sum(1)
-                .sort_values(ascending=False)
-                .iloc[:5]
-                .astype(int)
-                .to_dict()
-            )
-            print()
-        else:
+
+# +
+def plot_histograms(df, split_col, bins, dropna=False):
+    N_CATEGORICAL = 20
+    axs = create_axs()
+    for col in df:
+        if pd.api.types.is_numeric_dtype(df[col]) and df[col].nunique() > N_CATEGORICAL:
             ax = next(axs)
-            (col_df / kaggle_data.groupby("src").size()).plot.bar(title=col, ax=ax)
+            df.groupby([split_col], dropna=dropna)[col].plot.hist(
+                density=True,
+                ax=ax,
+                bins=bins.get(col, 10),
+                title=col,
+                legend=True,
+                # alpha=0.5,
+                histtype="step",
+            )
+            ax.legend(title=split_col)
+        else:
+            col_df = (
+                df.groupby([split_col, col], dropna=dropna)
+                .size()
+                .unstack(0, fill_value=0)
+            )
+            if len(col_df) > N_CATEGORICAL:
+                print(
+                    {
+                        "col": col,
+                        "n_unique": len(col_df),
+                    }
+                )
+                print(
+                    col_df.sum(1)
+                    .sort_values(ascending=False)
+                    .iloc[:5]
+                    .astype(int)
+                    .to_dict()
+                )
+                print()
+            else:
+                ax = next(axs)
+                (col_df / col_df.sum()).plot.bar(title=col, ax=ax)
+    return axs
+
+
+plot_histograms(
+    kaggle_data, "src", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)}
+)
+# -
+
+plot_histograms(
+    kaggle_train_df, "Survived", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)}
+)
+
+# +
+# for sex in kaggle_train_df['Sex'].unique():
+#     plot_histograms(kaggle_train_df.query("Sex==@sex"), 'Survived', {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)})
+# -
 
 # ### missing values
 
@@ -131,32 +154,7 @@ kaggle_xdata
 # ### histogram
 
 # +
-axs = create_axs()
-
-for col in kaggle_xdata:
-    if pd.api.types.is_numeric_dtype(kaggle_xdata[col]):
-        kaggle_xdata[col].astype(float).groupby("src").plot.hist(
-            density=True,
-            ax=next(axs),
-            bins=range(0, 150, 10) if col in ["C_num"] else 10,
-            title=col,
-            legend=True,
-            alpha=0.5,
-        )
-    else:
-        col_df = kaggle_xdata.groupby(["src", col]).size().unstack(0, fill_value=0)
-        if len(col_df) > 20:
-            display(
-                col,
-                col_df.sum(1)
-                .sort_values(ascending=False)
-                .iloc[:5]
-                .astype(int)
-                .to_dict(),
-            )
-        else:
-            ax = next(axs)
-            (col_df / kaggle_xdata.groupby("src").size()).plot.bar(title=col, ax=ax)
+axs = plot_histograms(kaggle_xdata, "src", {"C_num": range(0, 150, 10)}, dropna=True)
 
 ax = next(axs)
 sns.heatmap(
@@ -171,6 +169,13 @@ sns.heatmap(
 )
 ax.set_title("C_count")
 # -
+
+plot_histograms(
+    kaggle_xdata.query("src=='train'").join(kaggle_train_df.Survived),
+    "Survived",
+    {"C_num": range(0, 150, 10)},
+    dropna=True,
+)
 
 kaggle_xdata.isna().sum()
 
@@ -190,7 +195,7 @@ kaggle_train_df.eval("family_size=Parch+SibSp").join(
 family_groups = 0
 family_size = (
     kaggle_train_df.eval("family_size=Parch+SibSp")
-    .join(kaggle_train_df.Name.str.extract(r"(.*),.*")[0].rename("FamilyName"))
+    .join(kaggle_xdata.FamilyName.loc["train"])
     .groupby("FamilyName")
     .family_size.agg(["count", "median"])
     .sort_values("count", ascending=False)
@@ -203,14 +208,65 @@ ax = family_size.plot.bar(rot=90)
 # -
 
 survived_families = (
-    kaggle_train_df.groupby(
-        kaggle_train_df.Name.str.extract(r"(.*),.*")[0].rename("FamilyName")
-    )
+    kaggle_train_df.groupby(kaggle_xdata.FamilyName.loc["train"])
     .Survived.agg(["count", "sum"])
     .rename(columns={"sum": "survived"})
     .eval("not_survived=count-survived")
-    .query("count>1")
-    .sort_values("count", ascending=False)
+    .query("count>2")
+    .sort_values(["count", "survived"], ascending=False)
     .drop(columns=["count"])
 )
-survived_families.head(50).plot.bar()
+survived_families.plot.bar(stacked=True)
+
+kaggle_train_df.join(kaggle_xdata.FamilyName.loc["train"]).query(
+    "FamilyName == 'Laroche'"
+).sort_values("Age")
+
+couples_df = (
+    kaggle_data.join(kaggle_xdata)
+    # .loc['train']
+    .query("PrefixName == 'Mrs' | PrefixName == 'Mr'")
+    .pipe(
+        lambda df: df.join(
+            df.FirstName.str.extract(r"([^\(]*).*")[0]
+            .str.strip()
+            .rename("HusbandFirstName")
+        )
+    )
+    .groupby(["FamilyName", "HusbandFirstName"])
+    .filter(lambda df: len(df) > 1)
+)
+
+# +
+couples_count = (
+    couples_df.groupby(["FamilyName", "HusbandFirstName", "Sex", "Survived"])
+    .size()
+    .unstack(fill_value=0)
+    .rename(columns={0: "not_survived", 1: "survived"})
+    .unstack(fill_value=0)
+    .value_counts()
+    .sort_index()
+    .rename("count")
+)
+couples_count.index = pd.Index(
+    ["T?", "?T", "TT", "F?", "FT", "?F", "FF"], name="M/F survived"
+)
+couples_count["??"] = (
+    len(couples_df.groupby(["FamilyName", "HusbandFirstName"])) - couples_count.sum()
+)
+couples_count = couples_count.reindex(["TT", "T?", "?T", "FT", "F?", "?F", "FF", "??"])
+
+couples_count.index = pd.MultiIndex.from_tuples(
+    [
+        ("T", "T"),
+        ("T", "O"),
+        ("O", "T"),
+        ("F", "T"),
+        ("F", "O"),
+        ("O", "F"),
+        ("F", "F"),
+        ("O", "O"),
+    ],
+    names=["Male", "Female"],
+)
+couples_count.unstack(fill_value=0).rename(columns={"O": "?"}, index={"O": "?"})
