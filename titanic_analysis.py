@@ -52,9 +52,7 @@ if not input_dir.exists():
 
 kaggle_train_df = pd.read_csv(input_dir / "train.csv", index_col=0)
 kaggle_test_df = pd.read_csv(input_dir / "test.csv", index_col=0)
-kaggle_data = pd.concat(
-    [kaggle_train_df, kaggle_test_df], keys=["train", "test"], names=["src"]
-)
+kaggle_data = pd.concat([kaggle_train_df, kaggle_test_df], keys=["train", "test"], names=["src"])
 
 kaggle_data.sample(5).sort_index()
 
@@ -95,8 +93,7 @@ class AddColumns(preprocessing.FunctionTransformer):
         self.get_features = get_features
         super().__init__(
             func=lambda df: df.join(get_features(df)),
-            feature_names_out=lambda s, input_features: list(input_features)
-            + s.get_features.names,
+            feature_names_out=lambda s, input_features: list(input_features) + s.get_features.names,
         )
 
 
@@ -132,9 +129,7 @@ def build_preprocess(
     use_ticket_prefix=True,  # have many na?
     scale_numerical_cols=False,  # not needed in trees
 ):
-    scaling_cls = (
-        preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
-    )
+    scaling_cls = preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
 
     # add features
     features_creator = AddColumns(add_features)
@@ -145,36 +140,28 @@ def build_preprocess(
         [
             (
                 "cabin_enc",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                )
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_cabin_full
                 else "drop",
                 ["Cabin"],
             ),
             (
                 "c_prefix_enc",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                )
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_cabin_prefix
                 else "drop",
                 ["C_letter"],
             ),
             (
                 "c_num_enc",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                )
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_cabin_num
                 else "drop",
                 ["C_num"],
             ),
             (
                 "c_count",
-                make_pipeline(
-                    SimpleImputer(strategy="constant", fill_value=0), scaling_cls()
-                ),
+                make_pipeline(SimpleImputer(strategy="constant", fill_value=0), scaling_cls()),
                 ["C_count"],
             ),
             ("cabin_missing", impute.MissingIndicator(features="all"), ["Cabin"]),
@@ -191,9 +178,7 @@ def build_preprocess(
         [
             (
                 "encode",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                ),
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False),
                 ["Pclass", "Embarked", "PrefixName"],
             ),
             (
@@ -205,18 +190,14 @@ def build_preprocess(
             ),
             (
                 "t1_enc",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                )
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_ticket_prefix
                 else "drop",
                 ["ticket_prefix"],
             ),
             (
                 "name_family_enc",
-                preprocessing.OneHotEncoder(
-                    handle_unknown="ignore", sparse_output=False
-                )
+                preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_family_name
                 else "drop",
                 ["FamilyName"],
@@ -225,11 +206,7 @@ def build_preprocess(
             ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare"]),
             ("name_drop", "drop", ["Name"]),
             ("ticket_drop", "drop", ["Ticket"]),
-            (
-                "missing_ind",
-                impute.MissingIndicator(features="all"),
-                ["Age", "Embarked", "Fare"],
-            ),
+            ("missing_ind", impute.MissingIndicator(features="all"), ["Age", "Embarked", "Fare"]),
             # TODO: add these
             #             ('age_bin',          preprocessing.KBinsDiscretizer(), ['Age']),
             #             ('fare_bin',         preprocessing.KBinsDiscretizer(), ['Fare']),
@@ -251,10 +228,7 @@ def build_preprocess(
 
     # compose together
     features_transformer = FeatureUnion(
-        [
-            ("cabin_transformer", cabin_transformer),
-            ("main_transformer", main_transformer),
-        ]
+        [("cabin_transformer", cabin_transformer), ("main_transformer", main_transformer)]
     )
 
     renamer = RenameFeatures(lambda name: name.rsplit("__")[-1])
@@ -284,29 +258,19 @@ build_preprocess().fit_transform(kaggle_train_df)
 
 
 # +
-def build_model(
-    transformer=None,
-    classifier=None,
-):
+def build_model(transformer=None, classifier=None):
     if transformer is None:
         transformer = build_preprocess()
     if classifier is None:
         classifier = RandomForestClassifier()
 
-    pipeline = Pipeline(
-        [
-            ("transformer", transformer),
-            ("classifier", classifier),
-        ]
-    )
+    pipeline = Pipeline([("transformer", transformer), ("classifier", classifier)])
     return pipeline
 
 
 kaggle_train_df_shuffled = kaggle_train_df.sample(frac=1, random_state=1)
 model = build_model()
-model[:-1].fit_transform(
-    kaggle_train_df_shuffled, kaggle_train_df_shuffled.Survived
-).sort_index()
+model[:-1].fit_transform(kaggle_train_df_shuffled, kaggle_train_df_shuffled.Survived).sort_index()
 # -
 
 # #### test model
@@ -316,9 +280,7 @@ props = "use_family_name use_cabin_prefix use_cabin_num use_cabin_full use_ticke
 for prop in props:
     print(prop)
     kw_args = {p: p == prop for p in props}
-    model = build_model(
-        build_preprocess(**kw_args),
-    )
+    model = build_model(build_preprocess(**kw_args))
     model[:-1].fit_transform(kaggle_train_df, kaggle_train_df.Survived)
 
 # ### evaluate
@@ -347,9 +309,7 @@ def format_scores(scores, add_low=False):
     return f"{m:.2%} ±{s:.2%}" + (f" [{m-s:.2%}]" if add_low else "")
 
 
-def evaluate_model(
-    model, verbose=False, enhance_scores=False, cv=10, random_shuffle=False
-):
+def evaluate_model(model, verbose=False, enhance_scores=False, cv=10, random_shuffle=False):
     kaggle_train_df_shuffled = kaggle_train_df
     if random_shuffle is not False:
         if random_shuffle is True:
@@ -404,9 +364,7 @@ model = build_model(
 results = DataFrameDisplay()
 for i in range(2):
     display("Running...")
-    results.add_row(
-        evaluate_model(model, enhance_scores=True, random_shuffle=False), f"d_{i}"
-    )
+    results.add_row(evaluate_model(model, enhance_scores=True, random_shuffle=False), f"d_{i}")
 
 for i in range(3):
     display("Running...")
@@ -434,7 +392,9 @@ for i in range(3):
 # +
 # to be used with train_test_split
 # fig, axs = plt.subplots(1, 2, figsize=(12, 4))
-# metrics.ConfusionMatrixDisplay.from_predictions(val_target, val_pred, display_labels=['ns', 's'], ax=axs[0])
+# metrics.ConfusionMatrixDisplay.from_predictions(
+#     val_target, val_pred, display_labels=["ns", "s"], ax=axs[0]
+# )
 # metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=axs[1]);
 # -
 
@@ -466,9 +426,7 @@ for (
     )
     display("Running...")
     result = evaluate_model(model, enhance_scores=True)
-    result["num_features"] = len(
-        model[:-1].fit(kaggle_train_df).get_feature_names_out()
-    )
+    result["num_features"] = len(model[:-1].fit(kaggle_train_df).get_feature_names_out())
     results_1.add_row(result, list(kwargs.values()))
 
 results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
@@ -485,11 +443,7 @@ results_2 = DataFrameDisplay("n_estimators max_depth learning_rate".split())
 for n_estimators, max_depth, learning_rate in itertools.product(
     [2, 10, 20, 50, 150, 250], [3, 8], [1.0, 0.1, 0.02, 0.01, 0.005]
 ):
-    kwargs = dict(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
-        learning_rate=learning_rate,
-    )
+    kwargs = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
     model = build_model(
         transformer=build_preprocess(),
         classifier=XGBClassifier(**kwargs, objective="binary:logistic"),
@@ -502,9 +456,7 @@ for n_estimators, max_depth, learning_rate in itertools.product(
 # results_2.df.plot.line(y='accuracy_μ', yerr='accuracy_σ', marker='.', linestyle='', rot=90)
 # -
 
-results_2.df.plot.scatter(
-    x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True
-)
+results_2.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
 
 results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 
@@ -517,9 +469,7 @@ for n_estimators, max_depth, learning_rate in itertools.product(
     [25, 50, 100], [3, 5, 7, 10], [0.0025, 0.005, 0.01, 0.025, 0.05]
 ):
     kwargs_3: dict[str, Any] = dict(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
-        learning_rate=learning_rate,
+        n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate
     )
     model = build_model(
         transformer=build_preprocess(),
@@ -530,9 +480,7 @@ for n_estimators, max_depth, learning_rate in itertools.product(
     results_3.add_row(result, list(kwargs_3.values()))
 # -
 
-results_3.df.plot.scatter(
-    x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True
-)
+results_3.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
 
 results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 
@@ -546,11 +494,7 @@ for n_estimators, max_depth, learning_rate in itertools.product(
     [1, 2, 3, 4, 5, 6],
     [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
 ):
-    kwargs_4 = dict(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
-        learning_rate=learning_rate,
-    )
+    kwargs_4 = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
     model = build_model(
         transformer=build_preprocess(),
         classifier=XGBClassifier(**kwargs_4, objective="binary:logistic"),
@@ -560,9 +504,7 @@ for n_estimators, max_depth, learning_rate in itertools.product(
     results_4.add_row(result, list(kwargs_4.values()))
 # -
 
-results_4.df.plot.scatter(
-    x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True
-)
+results_4.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
 
 results_4.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 
@@ -580,9 +522,7 @@ for i in range(10):
     results_best.add_row(
         evaluate_model(
             build_model(
-                classifier=XGBClassifier(
-                    n_estimators=150, max_depth=2, learning_rate=0.08
-                )
+                classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
             ),
             enhance_scores=True,
             random_shuffle=True,
@@ -598,9 +538,7 @@ for i in range(10):
         evaluate_model(
             build_model(
                 transformer=build_preprocess(use_family_name=True, use_cabin_full=True),
-                classifier=XGBClassifier(
-                    n_estimators=150, max_depth=2, learning_rate=0.08
-                ),
+                classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08),
             ),
             enhance_scores=True,
             random_shuffle=True,
@@ -623,23 +561,17 @@ time_df.plot.scatter(x="n_estimators", y="fit_time", ax=next(axs), s=1)
 time_df.plot.scatter(x="max_depth", y="fit_time", ax=next(axs), s=1)
 time_df.plot.scatter(x="learning_rate", y="fit_time", ax=next(axs), s=1)
 
-time_df.query("n_estimators == 300").plot.scatter(
-    x="max_depth", y="fit_time", ax=next(axs), s=1
-)
+time_df.query("n_estimators == 300").plot.scatter(x="max_depth", y="fit_time", ax=next(axs), s=1)
 time_df.query("n_estimators == 300").plot.scatter(
     x="learning_rate", y="fit_time", ax=next(axs), s=1
 )
-time_df.groupby(["n_estimators", "max_depth"]).fit_time.median().to_xarray().plot(
-    ax=next(axs)
-)
+time_df.groupby(["n_estimators", "max_depth"]).fit_time.median().to_xarray().plot(ax=next(axs))
 # -
 
 # ### understand
 
 # +
-model = build_model(
-    classifier=XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.01)
-)
+model = build_model(classifier=XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.01))
 model.fit(kaggle_train_df, kaggle_train_df.Survived)
 
 features_df = pd.Series(
@@ -672,7 +604,13 @@ def finalize_and_predict(model):
     )
 
 
-# final_model = build_model(True, KNNImputer, {}, XGBClassifier, {'n_estimators': 20, 'max_depth': 8, 'learning_rate': 0.1, 'objective': 'binary:logistic'})
+# final_model = build_model(
+#     True,
+#     KNNImputer,
+#     {},
+#     XGBClassifier,
+#     {"n_estimators": 20, "max_depth": 8, "learning_rate": 0.1, "objective": "binary:logistic"},
+# )
 # final_model = build_model(True, KNNImputer, {}, RandomForestClassifier, {'n_estimators': 100})
 final_model = build_model(
     classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)

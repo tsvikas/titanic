@@ -38,9 +38,7 @@ if not input_dir.exists():
 
 kaggle_train_df = pd.read_csv(input_dir / "train.csv", index_col=0)
 kaggle_test_df = pd.read_csv(input_dir / "test.csv", index_col=0)
-kaggle_data = pd.concat(
-    [kaggle_train_df, kaggle_test_df], keys=["train", "test"], names=["src"]
-)
+kaggle_data = pd.concat([kaggle_train_df, kaggle_test_df], keys=["train", "test"], names=["src"])
 
 # ## raw data
 
@@ -72,25 +70,10 @@ def plot_histograms(df, split_col, bins, dropna=False):
             )
             ax.legend(title=split_col)
         else:
-            col_df = (
-                df.groupby([split_col, col], dropna=dropna)
-                .size()
-                .unstack(0, fill_value=0)
-            )
+            col_df = df.groupby([split_col, col], dropna=dropna).size().unstack(0, fill_value=0)
             if len(col_df) > N_CATEGORICAL:
-                print(
-                    {
-                        "col": col,
-                        "n_unique": len(col_df),
-                    }
-                )
-                print(
-                    col_df.sum(1)
-                    .sort_values(ascending=False)
-                    .iloc[:5]
-                    .astype(int)
-                    .to_dict()
-                )
+                print({"col": col, "n_unique": len(col_df)})
+                print(col_df.sum(1).sort_values(ascending=False).iloc[:5].astype(int).to_dict())
                 print()
             else:
                 ax = next(axs)
@@ -98,18 +81,18 @@ def plot_histograms(df, split_col, bins, dropna=False):
     return axs
 
 
-plot_histograms(
-    kaggle_data, "src", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)}
-)
+plot_histograms(kaggle_data, "src", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)})
 # -
 
-plot_histograms(
-    kaggle_train_df, "Survived", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)}
-)
+plot_histograms(kaggle_train_df, "Survived", {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)})
 
 # +
-# for sex in kaggle_train_df['Sex'].unique():
-#     plot_histograms(kaggle_train_df.query("Sex==@sex"), 'Survived', {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)})
+# for sex in kaggle_train_df["Sex"].unique():
+#     plot_histograms(
+#         kaggle_train_df.query("Sex==@sex"),
+#         "Survived",
+#         {"Age": range(0, 100, 5), "Fare": range(0, 400, 10)},
+#     )
 # -
 
 # ### missing values
@@ -228,9 +211,7 @@ couples_df = (
     .query("PrefixName == 'Mrs' | PrefixName == 'Mr'")
     .pipe(
         lambda df: df.join(
-            df.FirstName.str.extract(r"([^\(]*).*")[0]
-            .str.strip()
-            .rename("HusbandFirstName")
+            df.FirstName.str.extract(r"([^\(]*).*")[0].str.strip().rename("HusbandFirstName")
         )
     )
     .groupby(["FamilyName", "HusbandFirstName"])
@@ -248,9 +229,7 @@ couples_count = (
     .sort_index()
     .rename("count")
 )
-couples_count.index = pd.Index(
-    ["T?", "?T", "TT", "F?", "FT", "?F", "FF"], name="M/F survived"
-)
+couples_count.index = pd.Index(["T?", "?T", "TT", "F?", "FT", "?F", "FF"], name="M/F survived")
 couples_count["??"] = (
     len(couples_df.groupby(["FamilyName", "HusbandFirstName"])) - couples_count.sum()
 )
