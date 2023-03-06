@@ -75,4 +75,5 @@ __pypackages__/
 .ipynb_checkpoints/
 
 # synced notebooks:
-titanic-analysis.ipynb
+titanic_analysis.ipynb
+titanic_explore.ipynb
