@@ -209,7 +209,18 @@ survived_families = (
     .sort_values(["count", "survived"], ascending=False)
     .drop(columns=["count"])
 )
-survived_families.plot.bar(stacked=True)
+survived_families_fake = (
+    kaggle_train_df.groupby(kaggle_xdata.FamilyName.loc["train"].sample(frac=1).values)
+    .Survived.agg(["count", "sum"])
+    .rename(columns={"sum": "survived"})
+    .eval("not_survived=count-survived")
+    .query("count>2")
+    .sort_values(["count", "survived"], ascending=False)
+    .drop(columns=["count"])
+)
+axs = create_axs(2, ax_size=(5, 3))
+survived_families.plot.bar(stacked=True, ax=next(axs))
+survived_families_fake.plot.bar(stacked=True, ax=next(axs), title="Fake")
 
 kaggle_train_df.join(kaggle_xdata.FamilyName.loc["train"]).query(
     "FamilyName == 'Laroche'"
