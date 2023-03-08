@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from IPython.display import clear_output, display
 
 
 def create_axs(n_cols=4, ax_size=(3, 2)):
