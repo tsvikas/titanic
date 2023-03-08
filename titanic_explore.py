@@ -160,7 +160,17 @@ plot_histograms(
     dropna=True,
 )
 
-kaggle_xdata.isna().sum()
+(
+    kaggle_xdata.dtypes.to_frame("dtype").join(
+        pd.concat(
+            [
+                kaggle_xdata.isna().sum().rename("all n_na"),
+                kaggle_xdata.nunique().rename("all n_unique"),
+            ],
+            axis=1,
+        ).astype(int)
+    )
+)
 
 # ## compare survival
 
