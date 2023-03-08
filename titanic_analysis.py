@@ -209,7 +209,7 @@ def build_preprocess(
                 preprocessing.OneHotEncoder(
                     handle_unknown="ignore", sparse_output=False, drop="if_binary"
                 ),
-                ["Sex", "is_zero_fare"],
+                ["Sex", "is_zero_fare", "travel_alone"],
             ),
             (
                 "ticket_prefix_enc",
@@ -237,6 +237,7 @@ def build_preprocess(
                 else "drop",
                 ["FamilyName"],
             ),
+            # bug: no set_output()
             # ('name_first_vec',   count_names if use_first_name else 'drop', 'FirstName'),
             ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare", "family_size"]),
             (
@@ -255,7 +256,6 @@ def build_preprocess(
         ]
     )
 
-    # note - imputer can't work with spars
     # TODO: add to args?
     # TODO: needs scaling?
     imputer = KNNImputer()
@@ -273,7 +273,7 @@ def build_preprocess(
         [("cabin_transformer", cabin_transformer), ("main_transformer", main_transformer)]
     )
 
-    renamer = RenameFeatures(lambda name: name.rsplit("__")[-1])
+    renamer = RenameFeatures(lambda name: name.rsplit("__")[-1].replace(".0", ""))
     data_transformer = Pipeline(
         [
             ("features_creator", features_creator),
@@ -288,7 +288,6 @@ def build_preprocess(
 
 build_preprocess()
 # -
-
 # #### test preprocess
 
 build_preprocess().fit(train_df).get_feature_names_out()
@@ -384,6 +383,7 @@ model = build_model(
         use_cabin_num=True,  # bring too much data + many na
         use_cabin_full=True,  # bring too much data + many na
         use_ticket_prefix=True,  # have many na?
+        use_ticket_number=True,
         use_ticket_group_size=True,
         scale_numerical_cols=False,  # not needed in trees
     ),
