@@ -518,44 +518,6 @@ all_results = pd.concat([results_2.df, results_3.df, results_4.df])
 
 all_results.sort_values("accuracy_μ", ascending=False)
 
-# ##### best
-
-results_best = DataFrameDisplay()
-for i in range(10):
-    display("Running...")
-    results_best.add_row(
-        evaluate_model(
-            build_model(
-                classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
-            ),
-            enhance_scores=True,
-            random_shuffle=True,
-        ),
-        i,
-    )
-
-
-results_best_2 = DataFrameDisplay()
-for i in range(10):
-    display("Running...")
-    results_best_2.add_row(
-        evaluate_model(
-            build_model(
-                transformer=build_preprocess(use_family_name=True, use_cabin_full=True),
-                classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08),
-            ),
-            enhance_scores=True,
-            random_shuffle=True,
-        ),
-        i,
-    )
-
-
-ax = results_best.df.plot(y="accuracy_μ", yerr="accuracy_σ", marker=".", linestyle="")
-ax = results_best_2.df.plot(
-    y="accuracy_μ", yerr="accuracy_σ", marker=".", linestyle="", ax=ax, alpha=0.5
-)
-
 # ##### times
 
 # +
