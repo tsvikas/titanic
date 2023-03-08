@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import clear_output, display
@@ -15,6 +17,16 @@ class DataFrameDisplay:
         self.df = None
         # TODO: just auto-get this if dict.
         self.index_names = index_names
+
+    def save(self, filename: Path):
+        self.df.to_csv(filename)
+
+    @classmethod
+    def load(cls, filename: Path, index_names=None):
+        df = pd.read_csv(filename, index_col=index_names)
+        df_display = cls(index_names=index_names)
+        df_display.df = df
+        return df_display
 
     def add_row(self, data: dict, name):
         index = [[n] for n in name] if isinstance(name, list) else [name]

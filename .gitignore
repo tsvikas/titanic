@@ -77,3 +77,4 @@ __pypackages__/
 # synced notebooks:
 titanic_analysis.ipynb
 titanic_explore.ipynb
+results/

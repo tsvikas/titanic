@@ -401,32 +401,39 @@ for i in range(3):
 
 # #### which features?
 
-results_1 = DataFrameDisplay(
-    "family_name,cabin_prefix,cabin_num,cabin_full,ticket_prefix".split(",")
-)
-for (
-    use_family_name,
-    use_cabin_prefix,
-    use_cabin_num,
-    use_cabin_full,
-    use_ticket_prefix,
-) in itertools.product([False, True], repeat=5):
-    kwargs: dict[str, Any] = dict(
-        use_family_name=use_family_name,
-        # use_first_name=False,
-        use_cabin_prefix=use_cabin_prefix,
-        use_cabin_num=use_cabin_num,
-        use_cabin_full=use_cabin_full,
-        use_ticket_prefix=use_ticket_prefix,
-    )
-    model = build_model(
-        transformer=build_preprocess(**kwargs, scale_numerical_cols=False),
-        classifier=XGBClassifier(),
-    )
-    display("Running...")
-    result = evaluate_model(model, enhance_scores=True)
-    result["num_features"] = len(model[:-1].fit(kaggle_train_df).get_feature_names_out())
-    results_1.add_row(result, list(kwargs.values()))
+# +
+fn_1 = Path("results/1.csv")
+params_1 = ["family_name", "cabin_prefix", "cabin_num", "cabin_full", "ticket_prefix"]
+
+if fn_1.exists():
+    results_1 = DataFrameDisplay.load(fn_1, params_1)
+else:
+    results_1 = DataFrameDisplay(params_1)
+    for (
+        use_family_name,
+        use_cabin_prefix,
+        use_cabin_num,
+        use_cabin_full,
+        use_ticket_prefix,
+    ) in itertools.product([False, True], repeat=5):
+        kwargs: dict[str, Any] = dict(
+            use_family_name=use_family_name,
+            # use_first_name=False,
+            use_cabin_prefix=use_cabin_prefix,
+            use_cabin_num=use_cabin_num,
+            use_cabin_full=use_cabin_full,
+            use_ticket_prefix=use_ticket_prefix,
+        )
+        model = build_model(
+            transformer=build_preprocess(**kwargs, scale_numerical_cols=False),
+            classifier=XGBClassifier(),
+        )
+        display("Running...")
+        result = evaluate_model(model, enhance_scores=True)
+        result["num_features"] = len(model[:-1].fit(kaggle_train_df).get_feature_names_out())
+        results_1.add_row(result, list(kwargs.values()))
+    results_1.save(fn_1)
+# -
 
 results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
 
@@ -437,19 +444,25 @@ results_1.df.plot.scatter(x="num_features", y="fit_time")
 # ##### 2
 
 # +
-results_2 = DataFrameDisplay("n_estimators max_depth learning_rate".split())
+fn_2 = Path("results/2.csv")
+params_2 = ["n_estimators", "max_depth", "learning_rate"]
 
-for n_estimators, max_depth, learning_rate in itertools.product(
-    [2, 10, 20, 50, 150, 250], [3, 8], [1.0, 0.1, 0.02, 0.01, 0.005]
-):
-    kwargs = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
-    model = build_model(
-        transformer=build_preprocess(),
-        classifier=XGBClassifier(**kwargs, objective="binary:logistic"),
-    )
-    display("Running...")
-    result = evaluate_model(model, enhance_scores=True)
-    results_2.add_row(result, list(kwargs.values()))
+if fn_2.exists():
+    results_2 = DataFrameDisplay.load(fn_2, params_2)
+else:
+    results_2 = DataFrameDisplay(params_2)
+    for n_estimators, max_depth, learning_rate in itertools.product(
+        [2, 10, 20, 50, 150, 250], [3, 8], [1.0, 0.1, 0.02, 0.01, 0.005]
+    ):
+        kwargs = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
+        model = build_model(
+            transformer=build_preprocess(),
+            classifier=XGBClassifier(**kwargs, objective="binary:logistic"),
+        )
+        display("Running...")
+        result = evaluate_model(model, enhance_scores=True)
+        results_2.add_row(result, list(kwargs.values()))
+    results_2.save(fn_2)
 
 # +
 # results_2.df.plot.line(y='accuracy_μ', yerr='accuracy_σ', marker='.', linestyle='', rot=90)
@@ -462,21 +475,27 @@ results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # ##### 3
 
 # +
-results_3 = DataFrameDisplay("n_estimators max_depth learning_rate".split())
+fn_3 = Path("results/3.csv")
+params_3 = ["n_estimators", "max_depth", "learning_rate"]
 
-for n_estimators, max_depth, learning_rate in itertools.product(
-    [25, 50, 100], [3, 5, 7, 10], [0.0025, 0.005, 0.01, 0.025, 0.05]
-):
-    kwargs_3: dict[str, Any] = dict(
-        n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate
-    )
-    model = build_model(
-        transformer=build_preprocess(),
-        classifier=XGBClassifier(**kwargs_3, objective="binary:logistic"),
-    )
-    display("Running...")
-    result = evaluate_model(model, enhance_scores=True)
-    results_3.add_row(result, list(kwargs_3.values()))
+if fn_3.exists():
+    results_3 = DataFrameDisplay.load(fn_3, params_3)
+else:
+    results_3 = DataFrameDisplay(params_3)
+    for n_estimators, max_depth, learning_rate in itertools.product(
+        [25, 50, 100], [3, 5, 7, 10], [0.0025, 0.005, 0.01, 0.025, 0.05]
+    ):
+        kwargs_3: dict[str, Any] = dict(
+            n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate
+        )
+        model = build_model(
+            transformer=build_preprocess(),
+            classifier=XGBClassifier(**kwargs_3, objective="binary:logistic"),
+        )
+        display("Running...")
+        result = evaluate_model(model, enhance_scores=True)
+        results_3.add_row(result, list(kwargs_3.values()))
+    results_3.save(fn_3)
 # -
 
 results_3.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
@@ -486,21 +505,27 @@ results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # ##### 4
 
 # +
-results_4 = DataFrameDisplay("n_estimators max_depth learning_rate".split())
+fn_4 = Path("results/4.csv")
+params_4 = ["n_estimators", "max_depth", "learning_rate"]
 
-for n_estimators, max_depth, learning_rate in itertools.product(
-    [75, 100, 125, 150, 200, 300],
-    [1, 2, 3, 4, 5, 6],
-    [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
-):
-    kwargs_4 = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
-    model = build_model(
-        transformer=build_preprocess(),
-        classifier=XGBClassifier(**kwargs_4, objective="binary:logistic"),
-    )
-    display("Running...")
-    result = evaluate_model(model, enhance_scores=True)
-    results_4.add_row(result, list(kwargs_4.values()))
+if fn_4.exists():
+    results_4 = DataFrameDisplay.load(fn_4, params_4)
+else:
+    results_4 = DataFrameDisplay(params_4)
+    for n_estimators, max_depth, learning_rate in itertools.product(
+        [75, 100, 125, 150, 200, 300],
+        [1, 2, 3, 4, 5, 6],
+        [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
+    ):
+        kwargs_4 = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
+        model = build_model(
+            transformer=build_preprocess(),
+            classifier=XGBClassifier(**kwargs_4, objective="binary:logistic"),
+        )
+        display("Running...")
+        result = evaluate_model(model, enhance_scores=True)
+        results_4.add_row(result, list(kwargs_4.values()))
+    results_4.save(fn_4)
 # -
 
 results_4.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
