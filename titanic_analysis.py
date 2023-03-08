@@ -21,9 +21,7 @@
 # %aimport titanic
 
 # + _cell_guid="b1076dfc-b9ad-4769-8c92-a6c4dae69d19" _uuid="8f2839f25d086af736a60e9eeb907d3b93b6e0e5"
-import itertools
 from pathlib import Path
-from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,7 +33,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.impute import KNNImputer, SimpleImputer
-from sklearn.model_selection import cross_validate, train_test_split
+from sklearn.model_selection import ParameterGrid, cross_validate, train_test_split
 from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline
 from xgboost import XGBClassifier
 
@@ -384,35 +382,28 @@ for i in range(3):
 
 # +
 fn_1 = Path("results/1.csv")
-params_1 = ["family_name", "cabin_prefix", "cabin_num", "cabin_full", "ticket_prefix"]
+params_1 = [
+    "use_family_name",
+    "use_cabin_prefix",
+    "use_cabin_num",
+    "use_cabin_full",
+    "use_ticket_prefix",
+]
+param_grid_1 = ParameterGrid({p: [False, True] for p in params_1})
 
 if fn_1.exists():
     results_1 = DataFrameDisplay.load(fn_1, params_1)
 else:
     results_1 = DataFrameDisplay(params_1)
-    for (
-        use_family_name,
-        use_cabin_prefix,
-        use_cabin_num,
-        use_cabin_full,
-        use_ticket_prefix,
-    ) in itertools.product([False, True], repeat=5):
-        kwargs: dict[str, Any] = dict(
-            use_family_name=use_family_name,
-            # use_first_name=False,
-            use_cabin_prefix=use_cabin_prefix,
-            use_cabin_num=use_cabin_num,
-            use_cabin_full=use_cabin_full,
-            use_ticket_prefix=use_ticket_prefix,
-        )
+    for param in param_grid_1:
         model = build_model(
-            transformer=build_preprocess(**kwargs, scale_numerical_cols=False),
+            transformer=build_preprocess(**param, scale_numerical_cols=False),
             classifier=XGBClassifier(),
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
         result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
-        results_1.add_row(result, list(kwargs.values()))
+        results_1.add_row(result, list(param.values()))
     results_1.save(fn_1)
 # -
 
@@ -427,22 +418,26 @@ results_1.df.plot.scatter(x="num_features", y="fit_time")
 # +
 fn_2 = Path("results/2.csv")
 params_2 = ["n_estimators", "max_depth", "learning_rate"]
+param_grid_2 = ParameterGrid(
+    {
+        "n_estimators": [2, 10, 20, 50, 150, 250],
+        "max_depth": [3, 8],
+        "learning_rate": [1.0, 0.1, 0.02, 0.01, 0.005],
+    }
+)
 
 if fn_2.exists():
     results_2 = DataFrameDisplay.load(fn_2, params_2)
 else:
     results_2 = DataFrameDisplay(params_2)
-    for n_estimators, max_depth, learning_rate in itertools.product(
-        [2, 10, 20, 50, 150, 250], [3, 8], [1.0, 0.1, 0.02, 0.01, 0.005]
-    ):
-        kwargs = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
+    for param in param_grid_2:
         model = build_model(
             transformer=build_preprocess(),
-            classifier=XGBClassifier(**kwargs, objective="binary:logistic"),
+            classifier=XGBClassifier(**param, objective="binary:logistic"),
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_2.add_row(result, list(kwargs.values()))
+        results_2.add_row(result, list(param.values()))
     results_2.save(fn_2)
 
 # +
@@ -458,24 +453,26 @@ results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # +
 fn_3 = Path("results/3.csv")
 params_3 = ["n_estimators", "max_depth", "learning_rate"]
+param_grid_3 = ParameterGrid(
+    {
+        "n_estimators": [25, 50, 100],
+        "max_depth": [3, 5, 7, 10],
+        "learning_rate": [0.0025, 0.005, 0.01, 0.025, 0.05],
+    }
+)
 
 if fn_3.exists():
     results_3 = DataFrameDisplay.load(fn_3, params_3)
 else:
     results_3 = DataFrameDisplay(params_3)
-    for n_estimators, max_depth, learning_rate in itertools.product(
-        [25, 50, 100], [3, 5, 7, 10], [0.0025, 0.005, 0.01, 0.025, 0.05]
-    ):
-        kwargs_3: dict[str, Any] = dict(
-            n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate
-        )
+    for param in param_grid_3:
         model = build_model(
             transformer=build_preprocess(),
-            classifier=XGBClassifier(**kwargs_3, objective="binary:logistic"),
+            classifier=XGBClassifier(**param, objective="binary:logistic"),
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_3.add_row(result, list(kwargs_3.values()))
+        results_3.add_row(result, list(param.values()))
     results_3.save(fn_3)
 # -
 
@@ -488,24 +485,26 @@ results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # +
 fn_4 = Path("results/4.csv")
 params_4 = ["n_estimators", "max_depth", "learning_rate"]
+param_grid_4 = ParameterGrid(
+    {
+        "n_estimators": [75, 100, 125, 150, 200, 300],
+        "max_depth": [1, 2, 3, 4, 5, 6],
+        "learning_rate": [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
+    }
+)
 
 if fn_4.exists():
     results_4 = DataFrameDisplay.load(fn_4, params_4)
 else:
     results_4 = DataFrameDisplay(params_4)
-    for n_estimators, max_depth, learning_rate in itertools.product(
-        [75, 100, 125, 150, 200, 300],
-        [1, 2, 3, 4, 5, 6],
-        [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
-    ):
-        kwargs_4 = dict(n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate)
+    for param in param_grid_4:
         model = build_model(
             transformer=build_preprocess(),
-            classifier=XGBClassifier(**kwargs_4, objective="binary:logistic"),
+            classifier=XGBClassifier(**param, objective="binary:logistic"),
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_4.add_row(result, list(kwargs_4.values()))
+        results_4.add_row(result, list(param.values()))
     results_4.save(fn_4)
 # -
 
