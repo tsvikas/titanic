@@ -125,8 +125,12 @@ cabin_df = expand_cabin(kaggle_train_df.Cabin)
 {col: cabin_df[col].unique() for col in cabin_df}
 
 # +
+ticket_group_sizes = pd.read_csv("data/ticket_group_sizes.csv", index_col=0).squeeze("columns")
 kaggle_xdata = pd.concat(
-    [kaggle_train_df.pipe(add_features), kaggle_test_df.pipe(add_features)],
+    [
+        kaggle_train_df.pipe(add_features, ticket_group_sizes=ticket_group_sizes),
+        kaggle_test_df.pipe(add_features),
+    ],
     keys=["train", "test"],
     names=["src"],
 )
@@ -261,10 +265,7 @@ couples_count.unstack(fill_value=0).rename(columns={"O": "?"}, index={"O": "?"})
 
 ticket_group_sizes = kaggle_xdata.groupby("ticket_number").size()
 ticket_group_sizes.to_csv("data/ticket_group_sizes.csv")
-
 ticket_group_sizes.value_counts()
-
-kaggle_xdata.ticket_number.map(ticket_group_sizes)
 
 survived_groups = (
     kaggle_train_df.groupby(kaggle_xdata.ticket_number.loc["train"])
@@ -275,17 +276,15 @@ survived_groups = (
     .sort_values(["count", "survived"], ascending=False)
     .drop(columns=["count"])
 )
-survived_groups.plot.bar(stacked=True)
-
-# +
-# survived_groups = (
-#     kaggle_train_df.groupby(kaggle_xdata.ticket_number.loc["train"].sample(1).values)
-#     .Survived.agg(["count", "sum"])
-#     .rename(columns={"sum": "survived"})
-#     .eval("not_survived=count-survived")
-#     .query("count>2")
-#     .sort_values(["count", "survived"], ascending=False)
-#     .drop(columns=["count"])
-# )
-# survived_groups.plot.bar(stacked=True)
-# -
+survived_groups_fake = (
+    kaggle_train_df.groupby(kaggle_xdata.ticket_number.loc["train"].sample(frac=1).values)
+    .Survived.agg(["count", "sum"])
+    .rename(columns={"sum": "survived"})
+    .eval("not_survived=count-survived")
+    .query("count>2")
+    .sort_values(["count", "survived"], ascending=False)
+    .drop(columns=["count"])
+)
+axs = create_axs(2)
+survived_groups.plot.bar(stacked=True, ax=next(axs))
+survived_groups_fake.plot.bar(stacked=True, ax=next(axs))
