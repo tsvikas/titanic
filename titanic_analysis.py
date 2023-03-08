@@ -203,7 +203,7 @@ def build_preprocess(
                 ["FamilyName"],
             ),
             # ('name_first_vec',   count_names if use_first_name else 'drop', 'FirstName'),
-            ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare"]),
+            ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare", "family_size"]),
             ("name_drop", "drop", ["Name"]),
             ("ticket_drop", "drop", ["Ticket"]),
             ("missing_ind", impute.MissingIndicator(features="all"), ["Age", "Embarked", "Fare"]),

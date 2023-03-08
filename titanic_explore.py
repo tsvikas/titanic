@@ -136,8 +136,15 @@ kaggle_xdata
 
 # ### histogram
 
-# +
 axs = plot_histograms(kaggle_xdata, "src", {"C_num": range(0, 150, 10)}, dropna=True)
+
+# +
+axs = plot_histograms(
+    kaggle_xdata.query("src=='train'").join(kaggle_train_df.Survived),
+    "Survived",
+    {"C_num": range(0, 150, 10)},
+    dropna=True,
+)
 
 ax = next(axs)
 sns.heatmap(
@@ -152,13 +159,6 @@ sns.heatmap(
 )
 ax.set_title("C_count")
 # -
-
-plot_histograms(
-    kaggle_xdata.query("src=='train'").join(kaggle_train_df.Survived),
-    "Survived",
-    {"C_num": range(0, 150, 10)},
-    dropna=True,
-)
 
 (
     kaggle_xdata.dtypes.to_frame("dtype").join(
@@ -180,16 +180,12 @@ compare_col(kaggle_train_df, kaggle_train_df.Survived, "Age").plot.bar(ax=axs[1]
 
 # ## Family size and correlation inside families
 
-kaggle_train_df.eval("family_size=Parch+SibSp").join(
-    kaggle_train_df.Name.str.extract(r"(.*),.*")[0].rename("FamilyName")
-).plot.scatter(x="FamilyName", y="family_size")
+kaggle_train_df.join(kaggle_xdata).plot.scatter(x="FamilyName", y="family_size")
 
 # +
 family_groups = 0
 family_size = (
-    kaggle_train_df.eval("family_size=Parch+SibSp")
-    .join(kaggle_xdata.FamilyName.loc["train"])
-    .groupby("FamilyName")
+    kaggle_xdata.groupby("FamilyName")
     .family_size.agg(["count", "median"])
     .sort_values("count", ascending=False)
     .rename(columns={"count": "members", "median": "median family_size of members"})
