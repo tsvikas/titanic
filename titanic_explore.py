@@ -285,6 +285,6 @@ survived_groups_fake = (
     .sort_values(["count", "survived"], ascending=False)
     .drop(columns=["count"])
 )
-axs = create_axs(2)
+axs = create_axs(2, ax_size=(5, 3))
 survived_groups.plot.bar(stacked=True, ax=next(axs))
-survived_groups_fake.plot.bar(stacked=True, ax=next(axs))
+survived_groups_fake.plot.bar(stacked=True, ax=next(axs), title="Fake")

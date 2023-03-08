@@ -63,7 +63,8 @@ f"survived: {kaggle_train_df.Survived.mean():.1%}, not-survived: {1 - kaggle_tra
 
 # ### add features
 
-kaggle_xdata = add_features(kaggle_data)
+ticket_group_sizes = pd.read_csv("data/ticket_group_sizes.csv", index_col=0).squeeze("columns")
+kaggle_xdata = add_features(kaggle_data, ticket_group_sizes=ticket_group_sizes)
 kaggle_xdata.sample(5).sort_index()
 
 # ### missing values
@@ -147,12 +148,13 @@ def build_preprocess(
     use_cabin_full=False,  # bring too much data + many na
     use_ticket_prefix=True,  # have unequal dist?
     use_ticket_number=False,  # have too much data?
+    use_ticket_group_size=True,  # pseudo leakage
     scale_numerical_cols=False,  # not needed in trees
 ):
     scaling_cls = preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
 
     # add features
-    features_creator = AddColumns(add_features)
+    features_creator = AddColumns(add_features, kw_args=dict(ticket_group_sizes=ticket_group_sizes))
 
     # split and handle columns
     ## not imputing
@@ -221,6 +223,11 @@ def build_preprocess(
                 if use_ticket_number
                 else "drop",
                 ["ticket_number"],
+            ),
+            (
+                "ticket_group_size",
+                scaling_cls() if use_ticket_group_size else "drop",
+                ["ticket_group_size"],
             ),
             (
                 "name_family_enc",
@@ -369,6 +376,7 @@ model = build_model(
         use_cabin_num=True,  # bring too much data + many na
         use_cabin_full=True,  # bring too much data + many na
         use_ticket_prefix=True,  # have many na?
+        use_ticket_group_size=True,
         scale_numerical_cols=False,  # not needed in trees
     ),
     classifier=RandomForestClassifier(random_state=0),
