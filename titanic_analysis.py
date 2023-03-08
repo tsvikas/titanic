@@ -140,6 +140,7 @@ class DenseTransformer(preprocessing.FunctionTransformer):
 # TODO: search hp (optuna?)
 # TODO: use black -l 120
 # TODO: try ensemble.AdaBoostClassifier
+# TODO: validation graphs
 def build_preprocess(
     use_family_name=False,  # bring too much data
     # use_first_name=False,     # bring too much data
@@ -491,6 +492,8 @@ else:
 results_2.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
 
 results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
+
+# let's look around \[50, *, 0.01]
 
 # ##### 3
 
