@@ -83,7 +83,7 @@ kaggle_train_df = pd.read_csv("data/train.csv", index_col=0)
 add_features.names = list(kaggle_train_df.pipe(add_features).columns)  # type: ignore[attr-defined]
 
 
-def compare_col(data, col, model=None):
+def compare_col(data, target, col, model=None):
     data_transform = model[:-1].transform(data) if model is not None else data
     col_series = data_transform[col]
     if col_series.dtype == float:
@@ -92,8 +92,8 @@ def compare_col(data, col, model=None):
         except TypeError:
             col_series = pd.cut(col_series, 10)
     survived_col = (
-        data.groupby(col_series)
-        .Survived.agg(["count", "sum"])
+        target.groupby(col_series)
+        .agg(["count", "sum"])
         .rename(columns={"sum": "survived"})
         .eval("not_survived=count-survived")
         .drop(columns="count")

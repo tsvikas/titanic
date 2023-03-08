@@ -165,8 +165,8 @@ kaggle_xdata.isna().sum()
 # ## compare survival
 
 fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
-compare_col(kaggle_train_df, "Fare").plot.bar(ax=axs[0])
-compare_col(kaggle_train_df, "Age").plot.bar(ax=axs[1])
+compare_col(kaggle_train_df, kaggle_train_df.Survived, "Fare").plot.bar(ax=axs[0])
+compare_col(kaggle_train_df, kaggle_train_df.Survived, "Age").plot.bar(ax=axs[1])
 
 # ## Family size and correlation inside families
 

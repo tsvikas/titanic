@@ -35,7 +35,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.impute import KNNImputer, SimpleImputer
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline
 from xgboost import XGBClassifier
 
@@ -76,11 +76,14 @@ kaggle_data.join(kaggle_xdata).pipe(
 # ### split
 
 # +
-# train_df, val_df = train_test_split(kaggle_train_df, stratify=kaggle_train_df.Survived)
-# train_target = train_df.pop("Survived")
-# val_target = val_df.pop("Survived")
+# add validation for final estimation of the model
+train_df, val_df = train_test_split(
+    kaggle_train_df, test_size=100, stratify=kaggle_train_df.Survived, random_state=0
+)
+train_target = train_df.pop("Survived")
+val_target = val_df.pop("Survived")
 
-# len(train_df), len(val_df)
+len(train_df), len(val_df)
 # -
 
 # ### preprocess
@@ -248,9 +251,9 @@ build_preprocess()
 
 # #### test preprocess
 
-build_preprocess().fit(kaggle_train_df).get_feature_names_out()
+build_preprocess().fit(train_df).get_feature_names_out()
 
-build_preprocess().fit_transform(kaggle_train_df)
+build_preprocess().fit_transform(train_df)
 
 
 # ### model
@@ -267,9 +270,10 @@ def build_model(transformer=None, classifier=None):
     return pipeline
 
 
-kaggle_train_df_shuffled = kaggle_train_df.sample(frac=1, random_state=1)
+train_df_shuffled = train_df.sample(frac=1, random_state=1)
+train_target_shuffled = train_target.reindex_like(train_df_shuffled)
 model = build_model()
-model[:-1].fit_transform(kaggle_train_df_shuffled, kaggle_train_df_shuffled.Survived).sort_index()
+model[:-1].fit_transform(train_df_shuffled, train_target_shuffled).sort_index()
 # -
 
 # #### test model
@@ -280,7 +284,7 @@ for prop in props:
     print(prop)
     kw_args = {p: p == prop for p in props}
     model = build_model(build_preprocess(**kw_args))
-    model[:-1].fit_transform(kaggle_train_df, kaggle_train_df.Survived)
+    model[:-1].fit_transform(train_df, train_target)
 
 # ### evaluate
 
@@ -288,20 +292,6 @@ metrics.SCORERS.keys()
 
 
 # +
-# to be used with train_test_split
-# def evaluate_classifier(model, verbose=True):
-#     model.fit(train_df, y=train_target)
-#     # train_pred = pd.Series(model.predict(train_df), index=train_df.index, name="Survived_pred")
-#     val_pred = pd.Series(model.predict(val_df), index=val_df.index, name="Survived_pred")
-#     if verbose:
-#         print(metrics.classification_report(val_target, val_pred, target_names=['ns', 's']))
-#         print("accuracy_score =", metrics.accuracy_score(val_target, val_pred))
-#         print("balanced_accuracy_score =", metrics.balanced_accuracy_score(val_target, val_pred))
-#         val_prob = model.predict_proba(val_df)[:, 1]
-#         print("roc_auc_score =", metrics.roc_auc_score(val_target, val_prob))
-#     return model, val_pred
-
-
 def format_scores(scores, add_low=False):
     m = scores.mean()
     s = scores.std()
@@ -309,17 +299,16 @@ def format_scores(scores, add_low=False):
 
 
 def evaluate_model(model, verbose=False, enhance_scores=False, cv=10, random_shuffle=False):
-    kaggle_train_df_shuffled = kaggle_train_df
+    train_df_shuffled = train_df
     if random_shuffle is not False:
         if random_shuffle is True:
             random_shuffle = None
-        kaggle_train_df_shuffled = kaggle_train_df_shuffled.sample(
-            frac=1, random_state=random_shuffle
-        )
+        train_df_shuffled = train_df_shuffled.sample(frac=1, random_state=random_shuffle)
+    train_target_shuffled = train_target.reindex_like(train_df_shuffled)
     scores = cross_validate(
         model,
-        kaggle_train_df_shuffled,
-        kaggle_train_df_shuffled.Survived,
+        train_df_shuffled,
+        train_target_shuffled,
         cv=cv,
         scoring=["accuracy", "balanced_accuracy", "roc_auc", "f1"],
         n_jobs=-1,
@@ -386,16 +375,8 @@ for i in range(3):
         ),
         f"classifier_{i}",
     )
-
-
-# +
-# to be used with train_test_split
-# fig, axs = plt.subplots(1, 2, figsize=(12, 4))
-# metrics.ConfusionMatrixDisplay.from_predictions(
-#     val_target, val_pred, display_labels=["ns", "s"], ax=axs[0]
-# )
-# metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=axs[1]);
 # -
+
 
 # ### find best model
 
@@ -430,7 +411,7 @@ else:
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        result["num_features"] = len(model[:-1].fit(kaggle_train_df).get_feature_names_out())
+        result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
         results_1.add_row(result, list(kwargs.values()))
     results_1.save(fn_1)
 # -
@@ -596,7 +577,7 @@ time_df.groupby(["n_estimators", "max_depth"]).fit_time.median().to_xarray().plo
 
 # +
 model = build_model(classifier=XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.01))
-model.fit(kaggle_train_df, kaggle_train_df.Survived)
+model.fit(train_df, train_target)
 
 features_df = pd.Series(
     model[-1].feature_importances_, index=model[-1].feature_names_in_
@@ -605,28 +586,58 @@ features_df.head(10).plot.bar()
 # -
 
 fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
-compare_col(kaggle_train_df, "PrefixName_Mr", model).plot.bar(
-    ax=axs[0], ylim=(0, len(kaggle_train_df))
+compare_col(train_df, train_target, "PrefixName_Mr", model).plot.bar(
+    ax=axs[0], ylim=(0, len(train_df))
 )
-compare_col(kaggle_train_df, "PrefixName_Miss", model).plot.bar(
-    ax=axs[1], ylim=(0, len(kaggle_train_df))
+compare_col(train_df, train_target, "PrefixName_Miss", model).plot.bar(
+    ax=axs[1], ylim=(0, len(train_df))
 )
 
 fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
-compare_col(kaggle_train_df, "Fare").plot.bar(ax=axs[0])
-compare_col(kaggle_train_df, "Age").plot.bar(ax=axs[1])
+compare_col(train_df, train_target, "Fare").plot.bar(ax=axs[0])
+compare_col(train_df, train_target, "Age").plot.bar(ax=axs[1])
 
 
 # ### finalize_and_predict
 
 
 # +
+# to be used with train_test_split
+
+# def evaluate_classifier(model, verbose=True):
+#     model.fit(train_df, y=train_target)
+#     # train_pred = pd.Series(model.predict(train_df), index=train_df.index, name="Survived_pred")
+#     val_pred = pd.Series(model.predict(val_df), index=val_df.index, name="Survived_pred")
+#     if verbose:
+#         print(metrics.classification_report(val_target, val_pred, target_names=['ns', 's']))
+#         print("accuracy_score =", metrics.accuracy_score(val_target, val_pred))
+#         print("balanced_accuracy_score =", metrics.balanced_accuracy_score(val_target, val_pred))
+#         val_prob = model.predict_proba(val_df)[:, 1]
+#         print("roc_auc_score =", metrics.roc_auc_score(val_target, val_prob))
+#     return model, val_pred
+
+
+# fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+# metrics.ConfusionMatrixDisplay.from_predictions(
+#     val_target, val_pred, display_labels=["ns", "s"], ax=axs[0]
+# )
+# metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=axs[1]);
+
+
+# +
+def val_score(model):
+    model.fit(train_df, train_target)
+    return model.score(val_df, val_target).round(int(len(val_df) / 10))
+
+
 def finalize_and_predict(model):
     model.fit(kaggle_train_df.drop(columns="Survived"), kaggle_train_df.Survived)
     return pd.Series(
         data=model.predict(kaggle_test_df), index=kaggle_test_df.index, name="Survived"
     )
 
+
+# -
 
 # final_model = build_model(
 #     True,
@@ -639,6 +650,8 @@ def finalize_and_predict(model):
 final_model = build_model(
     classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
 )
+val_score(final_model)
+
 submit_df = finalize_and_predict(final_model)
 submit_df.to_csv("submission.csv")
 submit_df
