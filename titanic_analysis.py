@@ -24,10 +24,12 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from IPython.display import display
 
 # +
+import sklearn
+from IPython.display import display
 from sklearn import impute, metrics, preprocessing
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -87,16 +89,31 @@ len(train_df), len(val_df)
 # ### preprocess
 
 
+class AddColumns(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
+    def __init__(self, func, kw_args):
+        self.func = func
+        self.kw_args = kw_args
+
+    def fit(self, X, y=None):
+        self.feature_names_in_ = list(X.columns)
+        X_transformed = self._transform(X)
+        self.feature_names_out_ = list(X_transformed.columns)
+        return self
+
+    def _transform(self, X):
+        return X.join(self.func(X, **self.kw_args))
+
+    def transform(self, X):
+        X_transformed = self._transform(X)
+        assert list(X_transformed.columns) == self.feature_names_out_
+        return X_transformed
+
+    def get_feature_names_out(self, feature_names_in=None):
+        sklearn.utils.validation.check_is_fitted(self)
+        return np.array(self.feature_names_out_, dtype=object)
+
+
 # +
-class AddColumns(preprocessing.FunctionTransformer):
-    def __init__(self, get_features):
-        self.get_features = get_features
-        super().__init__(
-            func=lambda df: df.join(get_features(df)),
-            feature_names_out=lambda s, input_features: list(input_features) + s.get_features.names,
-        )
-
-
 class RenameFeatures(preprocessing.FunctionTransformer):
     def __init__(self, feature_name_fn):
         self.feature_name_fn = feature_name_fn
