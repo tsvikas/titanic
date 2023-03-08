@@ -150,6 +150,7 @@ def build_preprocess(
     use_ticket_number=False,  # have too much data?
     use_ticket_group_size=True,  # pseudo leakage
     scale_numerical_cols=False,  # not needed in trees
+    bin_numerical_cols=False,  # not needed in trees
 ):
     scaling_cls = preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
 
@@ -238,12 +239,19 @@ def build_preprocess(
             ),
             # ('name_first_vec',   count_names if use_first_name else 'drop', 'FirstName'),
             ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare", "family_size"]),
+            (
+                "binning",
+                make_pipeline(
+                    SimpleImputer(strategy="mean"),
+                    preprocessing.KBinsDiscretizer(encode="onehot-dense", random_state=0),
+                )
+                if bin_numerical_cols
+                else "drop",
+                ["Age", "Fare"],
+            ),
             ("name_drop", "drop", ["Name"]),
             ("ticket_drop", "drop", ["Ticket"]),
             ("missing_ind", impute.MissingIndicator(features="all"), ["Age", "Embarked", "Fare"]),
-            # TODO: add these
-            #             ('age_bin',          preprocessing.KBinsDiscretizer(), ['Age']),
-            #             ('fare_bin',         preprocessing.KBinsDiscretizer(), ['Fare']),
         ]
     )
 
