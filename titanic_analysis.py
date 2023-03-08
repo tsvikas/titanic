@@ -126,7 +126,7 @@ def build_preprocess(
     use_cabin_prefix=True,  # have many na
     use_cabin_num=False,  # bring too much data + many na
     use_cabin_full=False,  # bring too much data + many na
-    use_ticket_prefix=True,  # have many na?
+    use_ticket_prefix=True,  # have unequal dist?
     scale_numerical_cols=False,  # not needed in trees
 ):
     scaling_cls = preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
@@ -189,7 +189,7 @@ def build_preprocess(
                 ["Sex", "is_zero_fare"],
             ),
             (
-                "t1_enc",
+                "ticket_prefix_enc",
                 preprocessing.OneHotEncoder(handle_unknown="ignore", sparse_output=False)
                 if use_ticket_prefix
                 else "drop",

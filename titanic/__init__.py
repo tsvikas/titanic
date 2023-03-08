@@ -59,24 +59,19 @@ def expand_cabin(s):
     )
 
 
-def add_features(df):
-    return (
-        df[[]]
-        .assign(family_size=df.SibSp + df.Parch)
-        .assign(travel_alone=lambda df_: (df_.family_size == 0))
-        .join(expand_cabin(df.Cabin))
-        .join(df.Ticket.str.slice(0, 1).rename("ticket_prefix"))
-        .join((df.Fare == 0).rename("is_zero_fare"))
-        .join(df.Name.str.split(",", expand=True, n=1)[0].to_frame("FamilyName"))
-        .join(
-            df.Name.str.split(",", expand=True, n=1)[1]
-            .str.split(".", expand=True, n=1)
-            .rename(columns={0: "PrefixName", 1: "FirstName"})
-        )
-        .assign(FamilyName=lambda d: d.FamilyName.str.strip())
-        .assign(PrefixName=lambda d: d.PrefixName.str.strip())
-        .assign(FirstName=lambda d: d.FirstName.str.strip())
-    )
+def add_features(df, ticket_group_sizes=None):
+    features = df[[]]
+    features = features.join(expand_cabin(df.Cabin))
+    features["family_size"] = df.SibSp + df.Parch
+    features["travel_alone"] = features.family_size == 0
+    features["ticket_prefix"] = df.Ticket.str.slice(0, 1)
+    features["is_zero_fare"] = df.Fare == 0
+    split_name = df.Name.str.split(",", expand=True, n=1)
+    split_prefix_first_name = split_name[1].str.split(".", expand=True, n=1)
+    features["FamilyName"] = split_name[0].str.strip()
+    features["PrefixName"] = split_prefix_first_name[0].str.strip()
+    features["FirstName"] = split_prefix_first_name[1].str.strip()
+    return features
 
 
 # TODO: find better way to find the column names. preferabliy through fit.
