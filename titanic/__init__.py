@@ -66,6 +66,8 @@ def add_features(df, ticket_group_sizes=None):
     features["travel_alone"] = features.family_size == 0
     features["ticket_prefix"] = df.Ticket.str.slice(0, 1)
     features["ticket_number"] = df.Ticket.str.extract(r"(.* )?(\d+)")[1].astype("Int64")
+    if ticket_group_sizes is not None:
+        features["ticket_group_size"] = features["ticket_number"].map(ticket_group_sizes)
     features["is_zero_fare"] = df.Fare == 0
     split_name = df.Name.str.split(",", expand=True, n=1)
     split_prefix_first_name = split_name[1].str.split(".", expand=True, n=1)

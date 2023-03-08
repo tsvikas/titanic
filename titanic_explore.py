@@ -255,3 +255,37 @@ couples_count.index = pd.MultiIndex.from_tuples(
     names=["Male_Survived", "Female_Survived"],
 )
 couples_count.unstack(fill_value=0).rename(columns={"O": "?"}, index={"O": "?"})
+# -
+
+# ## correlation inside tickets
+
+ticket_group_sizes = kaggle_xdata.groupby("ticket_number").size()
+ticket_group_sizes.to_csv("data/ticket_group_sizes.csv")
+
+ticket_group_sizes.value_counts()
+
+kaggle_xdata.ticket_number.map(ticket_group_sizes)
+
+survived_groups = (
+    kaggle_train_df.groupby(kaggle_xdata.ticket_number.loc["train"])
+    .Survived.agg(["count", "sum"])
+    .rename(columns={"sum": "survived"})
+    .eval("not_survived=count-survived")
+    .query("count>2")
+    .sort_values(["count", "survived"], ascending=False)
+    .drop(columns=["count"])
+)
+survived_groups.plot.bar(stacked=True)
+
+# +
+# survived_groups = (
+#     kaggle_train_df.groupby(kaggle_xdata.ticket_number.loc["train"].sample(1).values)
+#     .Survived.agg(["count", "sum"])
+#     .rename(columns={"sum": "survived"})
+#     .eval("not_survived=count-survived")
+#     .query("count>2")
+#     .sort_values(["count", "survived"], ascending=False)
+#     .drop(columns=["count"])
+# )
+# survived_groups.plot.bar(stacked=True)
+# -
