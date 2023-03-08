@@ -203,7 +203,7 @@ survived_families.plot.bar(stacked=True)
 
 kaggle_train_df.join(kaggle_xdata.FamilyName.loc["train"]).query(
     "FamilyName == 'Laroche'"
-).sort_values("Age")
+).sort_values("Age", ascending=False)
 
 couples_df = (
     kaggle_data.join(kaggle_xdata)
@@ -246,6 +246,6 @@ couples_count.index = pd.MultiIndex.from_tuples(
         ("F", "F"),
         ("O", "O"),
     ],
-    names=["Male", "Female"],
+    names=["Male_Survived", "Female_Survived"],
 )
 couples_count.unstack(fill_value=0).rename(columns={"O": "?"}, index={"O": "?"})
