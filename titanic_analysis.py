@@ -401,6 +401,7 @@ param_grid_1 = ParameterGrid({p: [False, True] for p in params_1})
 
 if fn_1.exists():
     results_1 = DataFrameDisplay.load(fn_1, params_1)
+    display(results_1.df)
 else:
     results_1 = DataFrameDisplay(params_1)
     for param in param_grid_1:
@@ -411,7 +412,7 @@ else:
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
         result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
-        results_1.add_row(result, list(param.values()))
+        results_1.add_row(result, param)
     results_1.save(fn_1)
 # -
 
@@ -425,7 +426,6 @@ results_1.df.plot.scatter(x="num_features", y="fit_time")
 
 # +
 fn_2 = Path("results/2.csv")
-params_2 = ["n_estimators", "max_depth", "learning_rate"]
 param_grid_2 = ParameterGrid(
     {
         "n_estimators": [2, 10, 20, 50, 150, 250],
@@ -435,9 +435,10 @@ param_grid_2 = ParameterGrid(
 )
 
 if fn_2.exists():
-    results_2 = DataFrameDisplay.load(fn_2, params_2)
+    results_2 = DataFrameDisplay.load(fn_2, list(param_grid_2.param_grid[0].keys()))
+    display(results_2.df)
 else:
-    results_2 = DataFrameDisplay(params_2)
+    results_2 = DataFrameDisplay()
     for param in param_grid_2:
         model = build_model(
             transformer=build_preprocess(),
@@ -445,7 +446,7 @@ else:
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_2.add_row(result, list(param.values()))
+        results_2.add_row(result, param)
     results_2.save(fn_2)
 
 # +
@@ -460,7 +461,6 @@ results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 
 # +
 fn_3 = Path("results/3.csv")
-params_3 = ["n_estimators", "max_depth", "learning_rate"]
 param_grid_3 = ParameterGrid(
     {
         "n_estimators": [25, 50, 100],
@@ -470,9 +470,10 @@ param_grid_3 = ParameterGrid(
 )
 
 if fn_3.exists():
-    results_3 = DataFrameDisplay.load(fn_3, params_3)
+    results_3 = DataFrameDisplay.load(fn_3, list(param_grid_3.param_grid[0].keys()))
+    display(results_3.df)
 else:
-    results_3 = DataFrameDisplay(params_3)
+    results_3 = DataFrameDisplay()
     for param in param_grid_3:
         model = build_model(
             transformer=build_preprocess(),
@@ -480,7 +481,7 @@ else:
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_3.add_row(result, list(param.values()))
+        results_3.add_row(result, param)
     results_3.save(fn_3)
 # -
 
@@ -488,11 +489,12 @@ results_3.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alp
 
 results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 
+# let's look around \[100, 1-6, 0.05\]
+
 # ##### 4
 
 # +
 fn_4 = Path("results/4.csv")
-params_4 = ["n_estimators", "max_depth", "learning_rate"]
 param_grid_4 = ParameterGrid(
     {
         "n_estimators": [75, 100, 125, 150, 200, 300],
@@ -502,9 +504,10 @@ param_grid_4 = ParameterGrid(
 )
 
 if fn_4.exists():
-    results_4 = DataFrameDisplay.load(fn_4, params_4)
+    results_4 = DataFrameDisplay.load(fn_4, list(param_grid_4.param_grid[0].keys()))
+    display(results_4.df)
 else:
-    results_4 = DataFrameDisplay(params_4)
+    results_4 = DataFrameDisplay()
     for param in param_grid_4:
         model = build_model(
             transformer=build_preprocess(),
@@ -512,7 +515,7 @@ else:
         )
         display("Running...")
         result = evaluate_model(model, enhance_scores=True)
-        results_4.add_row(result, list(param.values()))
+        results_4.add_row(result, param)
     results_4.save(fn_4)
 # -
 

@@ -29,14 +29,26 @@ class DataFrameDisplay:
         return df_display
 
     def add_row(self, data: dict, name):
-        index = [[n] for n in name] if isinstance(name, list) else [name]
+        if isinstance(name, dict):
+            index = [[v] for v in name.values()]
+            index_names = list(name.keys())
+        elif isinstance(name, list):
+            index = [[n] for n in name]
+            index_names = self.index_names
+        else:
+            index = [name]
+            index_names = self.index_names
         row = pd.DataFrame(data=data, index=index)
-        if self.index_names is not None:
-            row.index.set_names(self.index_names, inplace=True)
+        if index_names is not None:
+            row.index.set_names(index_names, inplace=True)
         if self.df is None:
             self.df = row
         else:
-            self.df = pd.concat([self.df, row])
+            # we want to align indices
+            old_index_names = self.df.index.names
+            self.df = pd.concat([self.df.reset_index(), row.reset_index()]).set_index(
+                old_index_names
+            )
         self.display()
 
     def display(self):
