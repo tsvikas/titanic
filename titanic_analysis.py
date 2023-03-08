@@ -20,6 +20,8 @@
 # %autoreload 1
 # %aimport titanic
 
+import inspect
+
 # + _cell_guid="b1076dfc-b9ad-4769-8c92-a6c4dae69d19" _uuid="8f2839f25d086af736a60e9eeb907d3b93b6e0e5"
 from pathlib import Path
 
@@ -301,13 +303,13 @@ model[:-1].fit_transform(train_df_shuffled, train_target_shuffled).sort_index()
 
 # #### test model
 
-props = "use_family_name use_cabin_prefix use_cabin_num use_cabin_full use_ticket_prefix scale_numerical_cols".split()
+parameters = list(inspect.signature(build_preprocess).parameters)
 # skipping: use_first_name
-for prop in props:
-    print(prop)
-    kw_args = {p: p == prop for p in props}
+for param_name in parameters:
+    print(param_name)
+    kw_args = {p: p == param_name for p in parameters}
     model = build_model(build_preprocess(**kw_args))
-    model[:-1].fit_transform(train_df, train_target)
+    assert model.fit(train_df, train_target).score(train_df, train_target) > 0.5
 
 # ### evaluate
 
