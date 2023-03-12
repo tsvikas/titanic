@@ -646,16 +646,31 @@ compare_col(train_df, train_target, "Age").plot.bar(ax=axs[1])
 
 
 # +
+def predict(model, data):
+    return pd.Series(model.predict(data), index=data.index, name="Survived")
+
+
 def val_score(model):
     model.fit(train_df, train_target)
-    return model.score(val_df, val_target).round(int(len(val_df) / 10))
+    scores = {}
+    scores["score"] = model.score(val_df, val_target)
+    for metric in [
+        "accuracy",
+        "average_precision",
+        "balanced_accuracy",
+        "f1",
+        "precision",
+        "recall",
+        "roc_auc",
+    ]:
+        scorer = metrics.get_scorer(metric)
+        scores[metric] = scorer(model, val_df, val_target)
+    return scores
 
 
 def finalize_and_predict(model):
     model.fit(kaggle_train_df.drop(columns="Survived"), kaggle_train_df.Survived)
-    return pd.Series(
-        data=model.predict(kaggle_test_df), index=kaggle_test_df.index, name="Survived"
-    )
+    return predict(model, kaggle_test_df)
 
 
 # -
@@ -675,4 +690,3 @@ val_score(final_model)
 
 submit_df = finalize_and_predict(final_model)
 submit_df.to_csv("submission.csv")
-submit_df
