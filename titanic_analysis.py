@@ -195,6 +195,26 @@ def build_preprocess(
                 ["C_num"],
             ),
             (
+                "c_num_even",
+                preprocessing.FunctionTransformer(
+                    lambda sr: (1 - (sr % 2)).fillna(0),
+                    feature_names_out=lambda s, feature_names_in: [
+                        n + "_even" for n in feature_names_in
+                    ],
+                ),
+                ["C_num"],
+            ),
+            (
+                "c_num_odd",
+                preprocessing.FunctionTransformer(
+                    lambda sr: (sr % 2).fillna(0),
+                    feature_names_out=lambda s, feature_names_in: [
+                        n + "_odd" for n in feature_names_in
+                    ],
+                ),
+                ["C_num"],
+            ),
+            (
                 "c_count",
                 make_pipeline(SimpleImputer(strategy="constant", fill_value=0), scaling_cls()),
                 ["C_count"],
@@ -493,7 +513,7 @@ def objective(trial: optuna.Trial):
 
 objective_name = "accuracy"
 
-study_name = "XGBClassifier-params"  # Unique identifier of the study.
+study_name = "XGBClassifier-params-with-cabin_even"  # Unique identifier of the study.
 storage_name = "sqlite:///cache/{}.db".format(study_name)
 study = optuna.create_study(
     study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
@@ -630,8 +650,11 @@ def finalize_and_predict(model):
 # final_model = build_model(
 #     classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
 # )
+# final_model = build_model(
+#     classifier=XGBClassifier(learning_rate=0.10760475394208828, max_depth=3, n_estimators=185)
+# )
 final_model = build_model(
-    classifier=XGBClassifier(learning_rate=0.10760475394208828, max_depth=3, n_estimators=185)
+    classifier=XGBClassifier(learning_rate=0.5394083312155061, max_depth=2, n_estimators=150)
 )
 val_score(final_model)
 
