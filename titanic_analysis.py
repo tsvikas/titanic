@@ -472,126 +472,135 @@ results_1.df.plot.scatter(x="num_features", y="fit_time")
 # ##### 2
 
 # +
-fn_2 = Path("cache/2.csv")
-param_grid_2 = ParameterGrid(
-    {
-        "n_estimators": [2, 10, 20, 50, 150, 250],
-        "max_depth": [3, 8],
-        "learning_rate": [1.0, 0.1, 0.02, 0.01, 0.005],
-    }
-)
+# %%time
 
-if fn_2.exists():
-    results_2 = DataFrameDisplay.load(fn_2, list(param_grid_2.param_grid[0].keys()))
-    display(results_2.df)
-else:
-    results_2 = DataFrameDisplay()
-    for param in param_grid_2:
-        model = build_model(
-            transformer=build_preprocess(),
-            classifier=XGBClassifier(**param, objective="binary:logistic"),
-        )
-        display("Running...")
-        result = evaluate_model(model, enhance_scores=True)
-        results_2.add_row(result, param)
-    results_2.save(fn_2)
-
-# +
-# results_2.df.plot.line(y='accuracy_μ', yerr='accuracy_σ', marker='.', linestyle='', rot=90)
+param_grid_2 = {
+    "classifier__n_estimators": [2, 10, 20, 50, 150, 250],
+    "classifier__max_depth": [3, 8],
+    "classifier__learning_rate": [1.0, 0.1, 0.02, 0.01, 0.005],
+}
+search_2 = model_selection.GridSearchCV(
+    build_model(
+        transformer=build_preprocess(), classifier=XGBClassifier(objective="binary:logistic")
+    ),
+    param_grid_2,
+    scoring="accuracy",
+    n_jobs=-1,
+).fit(train_df, train_target)
+results_2 = pd.DataFrame(search_2.cv_results_)
 # -
 
-results_2.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
+results_2.plot.scatter(
+    x="mean_fit_time", y="mean_test_score", yerr="std_test_score", alpha=0.5, logx=True
+)
 
-results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
+grid = (
+    results_2.rename(columns=lambda s: s.replace("param_classifier__", ""))
+    .set_index(["learning_rate", "max_depth", "n_estimators"])
+    .mean_test_score.to_xarray()
+    .plot(col="max_depth", xscale="log", yscale="log")
+)
+for ax in grid.axs.reshape(-1):
+    ax.plot(50, 0.01, "rx")
 
 # let's look around \[50, *, 0.01]
 
 # ##### 3
 
 # +
-fn_3 = Path("cache/3.csv")
-param_grid_3 = ParameterGrid(
-    {
-        "n_estimators": [25, 50, 100],
-        "max_depth": [3, 5, 7, 10],
-        "learning_rate": [0.0025, 0.005, 0.01, 0.025, 0.05],
-    }
-)
+# %%time
 
-if fn_3.exists():
-    results_3 = DataFrameDisplay.load(fn_3, list(param_grid_3.param_grid[0].keys()))
-    display(results_3.df)
-else:
-    results_3 = DataFrameDisplay()
-    for param in param_grid_3:
-        model = build_model(
-            transformer=build_preprocess(),
-            classifier=XGBClassifier(**param, objective="binary:logistic"),
-        )
-        display("Running...")
-        result = evaluate_model(model, enhance_scores=True)
-        results_3.add_row(result, param)
-    results_3.save(fn_3)
+param_grid_3 = {
+    "classifier__n_estimators": [25, 50, 100],
+    "classifier__max_depth": [3, 5, 7, 10],
+    "classifier__learning_rate": [0.0025, 0.005, 0.01, 0.025, 0.05],
+}
+search_3 = model_selection.GridSearchCV(
+    build_model(
+        transformer=build_preprocess(), classifier=XGBClassifier(objective="binary:logistic")
+    ),
+    param_grid_3,
+    scoring="accuracy",
+    n_jobs=-1,
+).fit(train_df, train_target)
+results_3 = pd.DataFrame(search_3.cv_results_)
 # -
 
-results_3.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
+results_3.plot.scatter(
+    x="mean_fit_time", y="mean_test_score", yerr="std_test_score", alpha=0.5, logx=True
+)
 
-results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
+grid = (
+    results_3.rename(columns=lambda s: s.replace("param_classifier__", ""))
+    .set_index(["learning_rate", "max_depth", "n_estimators"])
+    .mean_test_score.to_xarray()
+    .plot(col="max_depth", xscale="log", yscale="log")
+)
+for ax in grid.axs.reshape(-1):
+    ax.plot(100, 0.05, "rx")
 
 # let's look around \[100, 1-6, 0.05\]
 
 # ##### 4
 
 # +
-fn_4 = Path("cache/4.csv")
-param_grid_4 = ParameterGrid(
-    {
-        "n_estimators": [75, 100, 125, 150, 200, 300],
-        "max_depth": [1, 2, 3, 4, 5, 6],
-        "learning_rate": [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
-    }
-)
+# %%time
 
-if fn_4.exists():
-    results_4 = DataFrameDisplay.load(fn_4, list(param_grid_4.param_grid[0].keys()))
-    display(results_4.df)
-else:
-    results_4 = DataFrameDisplay()
-    for param in param_grid_4:
-        model = build_model(
-            transformer=build_preprocess(),
-            classifier=XGBClassifier(**param, objective="binary:logistic"),
-        )
-        display("Running...")
-        result = evaluate_model(model, enhance_scores=True)
-        results_4.add_row(result, param)
-    results_4.save(fn_4)
+param_grid_4 = {
+    "classifier__n_estimators": [75, 100, 125, 150, 200, 300],
+    "classifier__max_depth": [1, 2, 3, 4, 5, 6],
+    "classifier__learning_rate": [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10],
+}
+search_4 = model_selection.GridSearchCV(
+    build_model(
+        transformer=build_preprocess(), classifier=XGBClassifier(objective="binary:logistic")
+    ),
+    param_grid_4,
+    scoring="accuracy",
+    n_jobs=-1,
+).fit(train_df, train_target)
+results_4 = pd.DataFrame(search_4.cv_results_)
 # -
 
-results_4.df.plot.scatter(x="fit_time", y="accuracy_μ", yerr="accuracy_σ", alpha=0.5, logx=True)
+results_4.plot.scatter(
+    x="mean_fit_time", y="mean_test_score", yerr="std_test_score", alpha=0.5, logx=True
+)
 
-results_4.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
+grid = (
+    results_4.rename(columns=lambda s: s.replace("param_classifier__", ""))
+    .set_index(["learning_rate", "max_depth", "n_estimators"])
+    .mean_test_score.to_xarray()
+    .plot(col="max_depth", xscale="log", yscale="log")
+)
+for ax in grid.axs.reshape(-1):
+    ax.plot(150, 0.08, "rx")
 
 # #### look at all runs
 
-all_results = pd.concat([results_2.df, results_3.df, results_4.df])
+all_results = (
+    pd.concat([results_2, results_3, results_4])
+    .rename(columns=lambda s: s.replace("param_classifier__", ""))
+    .set_index(["learning_rate", "max_depth", "n_estimators"])
+)
 
-all_results.sort_values("accuracy_μ", ascending=False)
+all_results[["mean_test_score", "std_test_score"]].sort_values("mean_test_score", ascending=False)
 
 # ##### times
 
 # +
-time_df = all_results.fit_time.reset_index()
+time_df = all_results.mean_fit_time.reset_index()
 axs = create_axs(3)
-time_df.plot.scatter(x="n_estimators", y="fit_time", ax=next(axs), s=1)
-time_df.plot.scatter(x="max_depth", y="fit_time", ax=next(axs), s=1)
-time_df.plot.scatter(x="learning_rate", y="fit_time", ax=next(axs), s=1)
+time_df.plot.scatter(x="n_estimators", y="mean_fit_time", ax=next(axs), s=1)
+time_df.plot.scatter(x="max_depth", y="mean_fit_time", ax=next(axs), s=1)
+time_df.plot.scatter(x="learning_rate", y="mean_fit_time", ax=next(axs), s=1)
 
-time_df.query("n_estimators == 300").plot.scatter(x="max_depth", y="fit_time", ax=next(axs), s=1)
 time_df.query("n_estimators == 300").plot.scatter(
-    x="learning_rate", y="fit_time", ax=next(axs), s=1
+    x="max_depth", y="mean_fit_time", ax=next(axs), s=1
 )
-time_df.groupby(["n_estimators", "max_depth"]).fit_time.median().to_xarray().plot(ax=next(axs))
+time_df.query("n_estimators == 300").plot.scatter(
+    x="learning_rate", y="mean_fit_time", ax=next(axs), s=1
+)
+time_df.groupby(["n_estimators", "max_depth"]).mean_fit_time.median().to_xarray().plot(ax=next(axs))
 # -
 
 # ### understand
