@@ -28,7 +28,7 @@ import missingno as msno
 import pandas as pd
 import seaborn as sns
 
-from titanic import add_features, expand_cabin
+from titanic.features import add_features, expand_cabin
 from titanic.notebook import compare_col, create_axs
 
 # -
