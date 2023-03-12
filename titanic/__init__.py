@@ -46,9 +46,9 @@ class DataFrameDisplay:
             if all(name is not None for name in self.df.index.names):
                 # we want to align indices
                 old_index_names = self.df.index.names
-                self.df = pd.concat(
-                    [self.df.reset_index(), row.reset_index()]
-                ).set_index(old_index_names)
+                self.df = pd.concat([self.df.reset_index(), row.reset_index()]).set_index(
+                    old_index_names
+                )
             else:
                 self.df = pd.concat([self.df, row])
         self.display()
@@ -81,9 +81,7 @@ def add_features(df, ticket_group_sizes=None):
     features["ticket_prefix"] = df.Ticket.str.slice(0, 1)
     features["ticket_number"] = df.Ticket.str.extract(r"(.* )?(\d+)")[1].astype("Int64")
     if ticket_group_sizes is not None:
-        features["ticket_group_size"] = features["ticket_number"].map(
-            ticket_group_sizes
-        )
+        features["ticket_group_size"] = features["ticket_number"].map(ticket_group_sizes)
     features["is_zero_fare"] = df.Fare == 0
     split_name = df.Name.str.split(",", expand=True, n=1)
     split_prefix_first_name = split_name[1].str.split(".", expand=True, n=1)
