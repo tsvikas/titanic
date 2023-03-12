@@ -124,7 +124,14 @@ class AddColumns(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
     def get_feature_names_out(self, feature_names_in=None):
         sklearn.utils.validation.check_is_fitted(self)
-        return np.array(self.feature_names_out_, dtype=object)
+        if feature_names_in is None:
+            feature_names_out = self.feature_names_out_
+        else:
+            assert len(feature_names_in) == len(self.feature_names_in_)
+            feature_names_out = (
+                list(feature_names_in) + self.feature_names_out_[len(feature_names_in) :]
+            )
+        return np.array(feature_names_out, dtype=object)
 
 
 # +
