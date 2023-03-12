@@ -535,41 +535,37 @@ ov.plot_slice(study, target_name=objective_name)
 
 axs = create_axs(3)
 for col in study.trials_dataframe(multi_index=True)["params"]:
-    df = study.trials_dataframe()
-    df = df.rename(columns=lambda s: s.replace("params_", ""))
-    df = df.rename(columns={"value": objective_name})
-    df.plot.scatter(x="number", c=objective_name, y=col, ax=next(axs))
+    (
+        study.trials_dataframe()
+        .rename(columns=lambda s: s.replace("params_", ""))
+        .rename(columns={"value": objective_name})
+    ).plot.scatter(x="number", c=objective_name, y=col, ax=next(axs))
 plt.tight_layout()
 
 ov.plot_param_importances(study, target_name=objective_name)
 
+max_depths = [1, 2, 3]
 study_df = study.trials_dataframe(multi_index=True)["params"].join(
     study.trials_dataframe()["value"].rename(objective_name)
 )
-n_cols = 3
+n_cols = len(max_depths)
 fig, axs = plt.subplots(1, n_cols, sharey=True, sharex=True, figsize=(6 * n_cols, 4))
 axs = iter(axs)
-for max_depth in [2, 3, 4]:
-    (
-        study_df[study_df.max_depth == max_depth]
-        # .query("max_depth==3")
-        # .set_index(list(study.trials_dataframe(multi_index=True)["params"].columns))[objective_name]
-        # .to_xarray().plot(xscale="log", yscale="log")
-        .plot.scatter(
-            y="learning_rate",
-            x="n_estimators",
-            c="accuracy",
-            cmap="turbo",
-            logy=True,
-            s=2,
-            ax=next(axs),
-            title=f"{max_depth=}",
-        )
+for max_depth in max_depths:
+    ax = study_df[study_df.max_depth == max_depth].plot.scatter(
+        y="learning_rate",
+        x="n_estimators",
+        c="accuracy",
+        cmap="turbo",
+        logy=True,
+        s=2,
+        ax=next(axs),
+        title=f"{max_depth=}",
     )
+    if max_depth == study.best_params["max_depth"]:
+        ax.plot(study.best_params["n_estimators"], study.best_params["learning_rate"], "xk")
 fig.tight_layout()
 
-
-study.best_params
 
 # ### understand
 
