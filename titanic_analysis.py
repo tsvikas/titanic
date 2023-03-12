@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from IPython.display import display
-from sklearn import impute, metrics, preprocessing
+from sklearn import calibration, impute, metrics, model_selection, preprocessing
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
@@ -623,29 +623,6 @@ compare_col(train_df, train_target, "Age").plot.bar(ax=axs[1])
 
 
 # +
-# to be used with train_test_split
-
-# def evaluate_classifier(model, verbose=True):
-#     model.fit(train_df, y=train_target)
-#     # train_pred = pd.Series(model.predict(train_df), index=train_df.index, name="Survived_pred")
-#     val_pred = pd.Series(model.predict(val_df), index=val_df.index, name="Survived_pred")
-#     if verbose:
-#         print(metrics.classification_report(val_target, val_pred, target_names=['ns', 's']))
-#         print("accuracy_score =", metrics.accuracy_score(val_target, val_pred))
-#         print("balanced_accuracy_score =", metrics.balanced_accuracy_score(val_target, val_pred))
-#         val_prob = model.predict_proba(val_df)[:, 1]
-#         print("roc_auc_score =", metrics.roc_auc_score(val_target, val_prob))
-#     return model, val_pred
-
-
-# fig, axs = plt.subplots(1, 2, figsize=(12, 4))
-# metrics.ConfusionMatrixDisplay.from_predictions(
-#     val_target, val_pred, display_labels=["ns", "s"], ax=axs[0]
-# )
-# metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=axs[1]);
-
-
-# +
 def predict(model, data):
     return pd.Series(model.predict(data), index=data.index, name="Survived")
 
@@ -665,6 +642,17 @@ def val_score(model):
     ]:
         scorer = metrics.get_scorer(metric)
         scores[metric] = scorer(model, val_df, val_target)
+
+    axs = create_axs(2, ax_size=(6, 4))
+    metrics.ConfusionMatrixDisplay.from_estimator(
+        model, val_df, val_target, display_labels=["ns", "s"], ax=next(axs)
+    )
+    metrics.DetCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
+    metrics.PrecisionRecallDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
+    metrics.PredictionErrorDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
+    metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
+    calibration.CalibrationDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
+    model_selection.LearningCurveDisplay.from_estimator(model, train_df, train_target, ax=next(axs))
     return scores
 
 
