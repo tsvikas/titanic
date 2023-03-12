@@ -31,16 +31,13 @@
 # %autoreload 1
 # %aimport titanic
 
-import inspect
-
 # + _cell_guid="b1076dfc-b9ad-4769-8c92-a6c4dae69d19" _uuid="8f2839f25d086af736a60e9eeb907d3b93b6e0e5"
+import inspect
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-# +
 import sklearn
 from IPython.display import display
 from sklearn import impute, metrics, preprocessing
@@ -55,6 +52,7 @@ from xgboost import XGBClassifier
 from titanic import DataFrameDisplay, add_features, compare_col, create_axs
 
 # -
+
 
 # ## load the data
 
