@@ -17,6 +17,7 @@ scikit-learn = "^1.2.1"
 xgboost = "^1.7.4"
 mlxtend = "^0.21.0"
 xarray = "^2023.2.0"
+optuna = "^3.1.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.0.0"

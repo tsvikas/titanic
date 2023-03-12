@@ -502,6 +502,7 @@ grid = (
 )
 for ax in grid.axs.reshape(-1):
     ax.plot(50, 0.01, "rx")
+grid.axs.reshape(-1)[0].plot(230, 0.07, "ko")
 
 # let's look around \[50, *, 0.01]
 
@@ -538,6 +539,7 @@ grid = (
 )
 for ax in grid.axs.reshape(-1):
     ax.plot(100, 0.05, "rx")
+grid.axs.reshape(-1)[0].plot(230, 0.07, "ko")
 
 # let's look around \[100, 1-6, 0.05\]
 
@@ -574,6 +576,7 @@ grid = (
 )
 for ax in grid.axs.reshape(-1):
     ax.plot(150, 0.08, "rx")
+grid.axs.reshape(-1)[2].plot(230, 0.07, "ko")
 
 # #### look at all runs
 
@@ -603,10 +606,74 @@ time_df.query("n_estimators == 300").plot.scatter(
 time_df.groupby(["n_estimators", "max_depth"]).mean_fit_time.median().to_xarray().plot(ax=next(axs))
 # -
 
+# #### optuna
+
+import optuna
+import optuna.visualization as ov
+
+
+# +
+def objective(trial: optuna.Trial):
+    model = build_model(
+        transformer=build_preprocess(),
+        classifier=XGBClassifier(
+            n_estimators=trial.suggest_int("n_estimators", 1, 300),
+            max_depth=trial.suggest_int("max_depth", 3, 10),
+            learning_rate=trial.suggest_float("learning_rate", 1e-3, 1, log=True),
+        ),
+    )
+    scores = cross_validate(model, train_df, train_target)
+    return scores["test_score"].mean()
+
+
+objective_name = "accuracy"
+
+study_name = "XGBClassifier-params"  # Unique identifier of the study.
+storage_name = "sqlite:///cache/{}.db".format(study_name)
+study = optuna.create_study(
+    study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
+)
+n_trails = max((-len(study.trials) - 1) % 10 + 1, 100 - len(study.trials))
+study.optimize(objective, n_trials=n_trails, n_jobs=-1)
+# -
+
+len(study.trials), study.best_params
+
+study.trials_dataframe().set_index("number").tail()
+
+ov.plot_optimization_history(study, target_name=objective_name)
+
+ov.plot_parallel_coordinate(study, target_name=objective_name)
+
+ov.plot_slice(study, target_name=objective_name)
+
+axs = create_axs(3)
+for col in study.trials_dataframe(multi_index=True)["params"]:
+    df = study.trials_dataframe()
+    df = df.rename(columns=lambda s: s.replace("params_", ""))
+    df = df.rename(columns={"value": objective_name})
+    df.plot.scatter(x="number", c=objective_name, y=col, ax=next(axs))
+plt.tight_layout()
+
+ov.plot_param_importances(study, target_name=objective_name)
+
+(
+    study.trials_dataframe(multi_index=True)["params"]
+    .join(study.trials_dataframe()["value"].rename(objective_name))
+    .query("max_depth==3")
+    .set_index(list(study.trials_dataframe(multi_index=True)["params"].columns))
+    # [objective_name].to_xarray().plot(xscale="log", yscale="log")
+    .reset_index()
+    .plot.scatter(y="learning_rate", x="n_estimators", c="accuracy", cmap="turbo", logy=True, s=2)
+)
+
+
+study.best_params
+
 # ### understand
 
 # +
-model = build_model(classifier=XGBClassifier(n_estimators=100, max_depth=3, learning_rate=0.01))
+model = build_model(classifier=XGBClassifier(**study.best_params))
 model.fit(train_df, train_target)
 
 features_df = pd.Series(
@@ -680,8 +747,11 @@ def finalize_and_predict(model):
 #     {"n_estimators": 20, "max_depth": 8, "learning_rate": 0.1, "objective": "binary:logistic"},
 # )
 # final_model = build_model(True, KNNImputer, {}, RandomForestClassifier, {'n_estimators': 100})
+# final_model = build_model(
+#     classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
+# )
 final_model = build_model(
-    classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
+    classifier=XGBClassifier(learning_rate=0.10760475394208828, max_depth=3, n_estimators=185)
 )
 val_score(final_model)
 
