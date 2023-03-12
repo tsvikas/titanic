@@ -618,7 +618,7 @@ def objective(trial: optuna.Trial):
         transformer=build_preprocess(),
         classifier=XGBClassifier(
             n_estimators=trial.suggest_int("n_estimators", 1, 300),
-            max_depth=trial.suggest_int("max_depth", 3, 10),
+            max_depth=trial.suggest_int("max_depth", 1, 10),
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 1, log=True),
         ),
     )
@@ -657,15 +657,30 @@ plt.tight_layout()
 
 ov.plot_param_importances(study, target_name=objective_name)
 
-(
-    study.trials_dataframe(multi_index=True)["params"]
-    .join(study.trials_dataframe()["value"].rename(objective_name))
-    .query("max_depth==3")
-    .set_index(list(study.trials_dataframe(multi_index=True)["params"].columns))
-    # [objective_name].to_xarray().plot(xscale="log", yscale="log")
-    .reset_index()
-    .plot.scatter(y="learning_rate", x="n_estimators", c="accuracy", cmap="turbo", logy=True, s=2)
+study_df = study.trials_dataframe(multi_index=True)["params"].join(
+    study.trials_dataframe()["value"].rename(objective_name)
 )
+n_cols = 3
+fig, axs = plt.subplots(1, n_cols, sharey=True, sharex=True, figsize=(6 * n_cols, 4))
+axs = iter(axs)
+for max_depth in [2, 3, 4]:
+    (
+        study_df[study_df.max_depth == max_depth]
+        # .query("max_depth==3")
+        # .set_index(list(study.trials_dataframe(multi_index=True)["params"].columns))[objective_name]
+        # .to_xarray().plot(xscale="log", yscale="log")
+        .plot.scatter(
+            y="learning_rate",
+            x="n_estimators",
+            c="accuracy",
+            cmap="turbo",
+            logy=True,
+            s=2,
+            ax=next(axs),
+            title=f"{max_depth=}",
+        )
+    )
+fig.tight_layout()
 
 
 study.best_params
