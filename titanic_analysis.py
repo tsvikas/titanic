@@ -13,6 +13,17 @@
 #     name: python3
 # ---
 
+# +
+# TODO: better imputer!
+# TODO: search hp (optuna?)
+# TODO: try ensemble.AdaBoostClassifier
+# TODO: validation graphs
+# TODO: read about XGBoost
+# TODO: features: cabin is even?
+# TODO: encode only common things
+# TODO: remove "is zero"
+# -
+
 # # titanic model
 
 # %load_ext autoreload
@@ -136,11 +147,6 @@ class DenseTransformer(preprocessing.FunctionTransformer):
 
 
 # +
-# TODO: better imputer!
-# TODO: search hp (optuna?)
-# TODO: use black -l 120
-# TODO: try ensemble.AdaBoostClassifier
-# TODO: validation graphs
 def build_preprocess(
     use_family_name=False,  # bring too much data
     # use_first_name=False,     # bring too much data

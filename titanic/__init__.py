@@ -15,7 +15,6 @@ def create_axs(n_cols=4, ax_size=(3, 2)):
 class DataFrameDisplay:
     def __init__(self, index_names=None):
         self.df = None
-        # TODO: just auto-get this if dict.
         self.index_names = index_names
 
     def save(self, filename: Path):
