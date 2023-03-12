@@ -49,7 +49,8 @@ from sklearn.model_selection import ParameterGrid, cross_validate, train_test_sp
 from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline
 from xgboost import XGBClassifier
 
-from titanic import DataFrameDisplay, add_features, compare_col, create_axs
+from titanic import add_features
+from titanic.notebook import DataFrameDisplay, compare_col, create_axs
 
 # -
 
