@@ -425,7 +425,7 @@ for i in range(3):
 # #### which features?
 
 # +
-fn_1 = Path("results/1.csv")
+fn_1 = Path("cache/1.csv")
 params_1 = [
     "use_family_name",
     "use_cabin_prefix",
@@ -461,7 +461,7 @@ results_1.df.plot.scatter(x="num_features", y="fit_time")
 # ##### 2
 
 # +
-fn_2 = Path("results/2.csv")
+fn_2 = Path("cache/2.csv")
 param_grid_2 = ParameterGrid(
     {
         "n_estimators": [2, 10, 20, 50, 150, 250],
@@ -498,7 +498,7 @@ results_2.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # ##### 3
 
 # +
-fn_3 = Path("results/3.csv")
+fn_3 = Path("cache/3.csv")
 param_grid_3 = ParameterGrid(
     {
         "n_estimators": [25, 50, 100],
@@ -532,7 +532,7 @@ results_3.df.accuracy_μ.to_xarray().plot(col="learning_rate", cmap="gray")
 # ##### 4
 
 # +
-fn_4 = Path("results/4.csv")
+fn_4 = Path("cache/4.csv")
 param_grid_4 = ParameterGrid(
     {
         "n_estimators": [75, 100, 125, 150, 200, 300],

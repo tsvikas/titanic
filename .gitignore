@@ -74,7 +74,9 @@ __pypackages__/
 # jupyter
 .ipynb_checkpoints/
 
+# my folders
+cache/
+
 # synced notebooks:
 titanic_analysis.ipynb
 titanic_explore.ipynb
-results/
