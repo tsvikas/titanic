@@ -248,23 +248,7 @@ def finalize_and_predict(model):
 
 # -
 
-# final_model = build_model(
-#     True,
-#     KNNImputer,
-#     {},
-#     XGBClassifier,
-#     {"n_estimators": 20, "max_depth": 8, "learning_rate": 0.1, "objective": "binary:logistic"},
-# )
-# final_model = build_model(True, KNNImputer, {}, RandomForestClassifier, {'n_estimators': 100})
-# final_model = build_model(
-#     classifier=XGBClassifier(n_estimators=150, max_depth=2, learning_rate=0.08)
-# )
-# final_model = build_model(
-#     classifier=XGBClassifier(learning_rate=0.10760475394208828, max_depth=3, n_estimators=185)
-# )
-final_model = build_model(
-    classifier=XGBClassifier(learning_rate=0.5394083312155061, max_depth=2, n_estimators=150)
-)
+final_model = build_model(classifier=XGBClassifier(**study.best_params))
 val_score(final_model)
 
 submit_df = finalize_and_predict(final_model)
