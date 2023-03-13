@@ -149,7 +149,9 @@ plt.tight_layout()
 
 ov.plot_param_importances(study, target_name=objective_name)
 
-max_depths = [1, 2, 3]
+best_depth = study.best_params["max_depth"]
+marker = dict(marker="o", ms=8, markerfacecolor="None", markeredgecolor="k", markeredgewidth=0.5)
+max_depths = [best_depth - 1, best_depth, best_depth + 1]
 study_df = study.trials_dataframe(multi_index=True)["params"].join(
     study.trials_dataframe()["value"].rename(objective_name)
 )
@@ -168,7 +170,7 @@ for max_depth in max_depths:
         title=f"{max_depth=}",
     )
     if max_depth == study.best_params["max_depth"]:
-        ax.plot(study.best_params["n_estimators"], study.best_params["learning_rate"], "xk")
+        ax.plot(study.best_params["n_estimators"], study.best_params["learning_rate"], **marker)
 fig.tight_layout()
 
 
