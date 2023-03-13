@@ -65,10 +65,7 @@ class DataFrameDisplay:
 
 
 def compare_col(
-    data: pd.DataFrame,
-    target: pd.Series,
-    col: str,
-    model: Pipeline | None = None,
+    data: pd.DataFrame, target: pd.Series, col: str, model: Pipeline | None = None
 ) -> pd.DataFrame:
     data_transform = model[:-1].transform(data) if model is not None else data
     col_series = data_transform[col]

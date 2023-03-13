@@ -258,11 +258,7 @@ def build_preprocess(
             ),
             # bug: no set_output()
             # ('name_first_vec',   count_names if use_first_name else 'drop', 'FirstName'),
-            (
-                "normalize",
-                scaling_cls(),
-                ["Age", "SibSp", "Parch", "Fare", "family_size"],
-            ),
+            ("normalize", scaling_cls(), ["Age", "SibSp", "Parch", "Fare", "family_size"]),
             (
                 "binning",
                 make_pipeline(
@@ -275,11 +271,7 @@ def build_preprocess(
             ),
             ("name_drop", "drop", ["Name"]),
             ("ticket_drop", "drop", ["Ticket"]),
-            (
-                "missing_ind",
-                impute.MissingIndicator(features="all"),
-                ["Age", "Embarked", "Fare"],
-            ),
+            ("missing_ind", impute.MissingIndicator(features="all"), ["Age", "Embarked", "Fare"]),
         ]
     )
 
@@ -297,10 +289,7 @@ def build_preprocess(
 
     # compose together
     features_transformer = FeatureUnion(
-        [
-            ("cabin_transformer", cabin_transformer),
-            ("main_transformer", main_transformer),
-        ]
+        [("cabin_transformer", cabin_transformer), ("main_transformer", main_transformer)]
     )
 
     renamer = RenameFeatures(lambda name: name.rsplit("__")[-1].replace(".0", ""))
@@ -333,8 +322,7 @@ if __name__ == "__main__":
 
 
 def build_model(
-    transformer: Pipeline | None = None,
-    classifier: sklearn.base.ClassifierMixin | None = None,
+    transformer: Pipeline | None = None, classifier: sklearn.base.ClassifierMixin | None = None
 ) -> Pipeline:
     if transformer is None:
         transformer = build_preprocess()
@@ -382,12 +370,7 @@ def evaluate_model(
         x = x.sample(frac=1, random_state=random_shuffle)
         y = y.reindex(x.index)
     scores = cross_validate(
-        model,
-        x,
-        y,
-        cv=cv,
-        scoring=["accuracy", "balanced_accuracy", "roc_auc", "f1"],
-        n_jobs=-1,
+        model, x, y, cv=cv, scoring=["accuracy", "balanced_accuracy", "roc_auc", "f1"], n_jobs=-1
     )
     new_scores = {}
     for name, score in scores.items():
