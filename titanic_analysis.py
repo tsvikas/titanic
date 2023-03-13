@@ -16,12 +16,11 @@
 # +
 # TODO: better imputer!
 # TODO: try ensemble.AdaBoostClassifier
-# TODO: validation graphs
 # TODO: read about XGBoost
-# TODO: features: cabin is even?
-# TODO: encode only common things
-# TODO: remove "is zero"
+# TODO: features: encode only common things
+# TODO: features: remove "is zero"
 # TODO: why cross_val is 0.85, but test is 0.79?
+# TODO: use shap to inspect
 # -
 
 # # titanic model
