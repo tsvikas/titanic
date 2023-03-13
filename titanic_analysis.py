@@ -208,9 +208,12 @@ def predict(model, data):
 
 
 def val_score(model):
-    model.fit(train_df, train_target)
     scores = {}
-    scores["score"] = model.score(val_df, val_target)
+    scores["train_cv"] = cross_validate(model, train_df, train_target)["test_score"]
+    scores["train_score"] = scores["train_cv"].mean()
+    scores["train_score_median"] = pd.Series(scores["train_cv"]).median()
+    model.fit(train_df, train_target)
+    scores["val_score"] = model.score(val_df, val_target)
     for metric in [
         "accuracy",
         "average_precision",
