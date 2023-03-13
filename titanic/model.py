@@ -8,8 +8,10 @@
 # +
 import inspect
 from pathlib import Path
+from typing import Any, Callable
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import sklearn
 from IPython.display import display
@@ -20,6 +22,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline
+from typing_extensions import Self
 
 from titanic.features import add_features
 from titanic.notebook import DataFrameDisplay
@@ -70,25 +73,27 @@ if __name__ == "__main__":
 
 
 class AddColumns(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
-    def __init__(self, func, kw_args):
+    def __init__(self, func: Callable[..., pd.DataFrame], kw_args: dict[str, Any]):
         self.func = func
         self.kw_args = kw_args
 
-    def fit(self, X, y=None):
+    def fit(self, X: pd.DataFrame, y: None = None) -> Self:
         self.feature_names_in_ = list(X.columns)
         X_transformed = self._transform(X)
         self.feature_names_out_ = list(X_transformed.columns)
         return self
 
-    def _transform(self, X):
+    def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
         return X.join(self.func(X, **self.kw_args))
 
-    def transform(self, X):
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_transformed = self._transform(X)
         assert list(X_transformed.columns) == self.feature_names_out_
         return X_transformed
 
-    def get_feature_names_out(self, feature_names_in=None):
+    def get_feature_names_out(
+        self, feature_names_in: list[str] | None = None
+    ) -> npt.NDArray[object]:
         sklearn.utils.validation.check_is_fitted(self)
         if feature_names_in is None:
             feature_names_out = self.feature_names_out_
@@ -101,7 +106,7 @@ class AddColumns(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
 
 class RenameFeatures(preprocessing.FunctionTransformer):
-    def __init__(self, feature_name_fn):
+    def __init__(self, feature_name_fn: Callable[[str], str] | None):
         self.feature_name_fn = feature_name_fn
         super().__init__(
             feature_names_out=lambda s, input_features: [
@@ -119,17 +124,17 @@ class DenseTransformer(preprocessing.FunctionTransformer):
 
 
 def build_preprocess(
-    use_family_name=False,  # bring too much data
-    # use_first_name=False,     # bring too much data
-    use_cabin_prefix=True,  # have many na
-    use_cabin_num=False,  # bring too much data + many na
-    use_cabin_full=False,  # bring too much data + many na
-    use_ticket_prefix=True,  # have unequal dist?
-    use_ticket_number=False,  # have too much data?
-    use_ticket_group_size=True,  # pseudo leakage
-    scale_numerical_cols=False,  # not needed in trees
-    bin_numerical_cols=False,  # not needed in trees
-):
+    use_family_name: bool = False,  # bring too much data
+    # use_first_name: bool = False,     # bring too much data
+    use_cabin_prefix: bool = True,  # have many na
+    use_cabin_num: bool = False,  # bring too much data + many na
+    use_cabin_full: bool = False,  # bring too much data + many na
+    use_ticket_prefix: bool = True,  # have unequal dist?
+    use_ticket_number: bool = False,  # have too much data?
+    use_ticket_group_size: bool = True,  # pseudo leakage
+    scale_numerical_cols: bool = False,  # not needed in trees
+    bin_numerical_cols: bool = False,  # not needed in trees
+) -> Pipeline:
     scaling_cls = preprocessing.StandardScaler if scale_numerical_cols else lambda: "passthrough"
 
     # add features
@@ -311,7 +316,10 @@ if __name__ == "__main__":
 # ## model
 
 
-def build_model(transformer=None, classifier=None):
+def build_model(
+    transformer: Pipeline | None = None,
+    classifier: sklearn.base.ClassifierMixin | None = None,
+) -> Pipeline:
     if transformer is None:
         transformer = build_preprocess()
     if classifier is None:
@@ -341,18 +349,24 @@ if __name__ == "__main__":
 
 
 # +
-def format_scores(scores, add_low=False):
+def format_scores(scores: npt.NDArray[float], add_low: bool = False) -> str:
     m = scores.mean()
     s = scores.std()
     return f"{m:.2%} ±{s:.2%}" + (f" [{m-s:.2%}]" if add_low else "")
 
 
-def evaluate_model(model, X, y, cv=10, random_shuffle=False):
+def evaluate_model(
+    model: sklearn.base.ClassifierMixin,
+    X: pd.DataFrame,
+    y: pd.Series,
+    cv: int = 10,
+    random_shuffle: bool | int | None = False,
+) -> dict[str, float]:
     if random_shuffle is not False:
         if random_shuffle is True:
             random_shuffle = None
         X = X.sample(frac=1, random_state=random_shuffle)
-        y = y.reindex_like(X)
+        y = y.reindex(X.index)
     scores = cross_validate(
         model,
         X,

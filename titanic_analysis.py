@@ -90,18 +90,19 @@ for param_name in ["base"] + preprocess_parameters:
     result = evaluate_model(model, train_df, train_target)
     result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
     results_1.add_row(result, param_name)
+assert results_1.df is not None
 
 
 results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
 
-(results_1.df - results_1.df.loc["base"])[["fit_time", "accuracy_μ"]].sort_values("fit_time")
+(results_1.df - results_1.df.loc["base"])[["fit_time", "accuracy_μ"]].sort_values(by="fit_time")
 
 
 # #### which hyperparams?
 
 
 # +
-def objective(trial: optuna.Trial):
+def objective(trial: optuna.Trial) -> float:
     model = build_model(
         transformer=build_preprocess(),
         classifier=XGBClassifier(
@@ -111,7 +112,8 @@ def objective(trial: optuna.Trial):
         ),
     )
     scores = cross_validate(model, train_df, train_target)
-    return scores["test_score"].mean()
+    score: float = scores["test_score"].mean()
+    return score
 
 
 objective_name = "accuracy"
@@ -135,13 +137,13 @@ ov.plot_parallel_coordinate(study, target_name=objective_name)
 
 ov.plot_slice(study, target_name=objective_name)
 
-axs = create_axs(3)
+axis = create_axs(3)
 for col in study.trials_dataframe(multi_index=True)["params"]:
     (
         study.trials_dataframe()
         .rename(columns=lambda s: s.replace("params_", ""))
         .rename(columns={"value": objective_name})
-    ).plot.scatter(x="number", c=objective_name, y=col, ax=next(axs))
+    ).plot.scatter(x="number", c=objective_name, y=col, ax=next(axis))
 plt.tight_layout()
 
 ov.plot_param_importances(study, target_name=objective_name)
@@ -152,7 +154,7 @@ study_df = study.trials_dataframe(multi_index=True)["params"].join(
 )
 n_cols = len(max_depths)
 fig, axs = plt.subplots(1, n_cols, sharey=True, sharex=True, figsize=(6 * n_cols, 4))
-axs = iter(axs)
+axis = iter(axs)
 for max_depth in max_depths:
     ax = study_df[study_df.max_depth == max_depth].plot.scatter(
         y="learning_rate",
@@ -161,7 +163,7 @@ for max_depth in max_depths:
         cmap="turbo",
         logy=True,
         s=2,
-        ax=next(axs),
+        ax=next(axis),
         title=f"{max_depth=}",
     )
     if max_depth == study.best_params["max_depth"]:
@@ -181,7 +183,7 @@ features_df = pd.Series(
 features_df.head(10).plot.bar()
 # -
 
-fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
+_fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
 compare_col(train_df, train_target, "PrefixName_Mr", model).plot.bar(
     ax=axs[0], ylim=(0, len(train_df))
 )
@@ -189,7 +191,7 @@ compare_col(train_df, train_target, "PrefixName_Miss", model).plot.bar(
     ax=axs[1], ylim=(0, len(train_df))
 )
 
-fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
+_fig, axs = plt.subplots(1, 2, figsize=(6 * 2, 4))
 compare_col(train_df, train_target, "Fare").plot.bar(ax=axs[0])
 compare_col(train_df, train_target, "Age").plot.bar(ax=axs[1])
 
@@ -218,16 +220,18 @@ def val_score(model):
         scorer = metrics.get_scorer(metric)
         scores[metric] = scorer(model, val_df, val_target)
 
-    axs = create_axs(2, ax_size=(6, 4))
+    axis = create_axs(2, ax_size=(6, 4))
     metrics.ConfusionMatrixDisplay.from_estimator(
-        model, val_df, val_target, display_labels=["ns", "s"], ax=next(axs)
+        model, val_df, val_target, display_labels=["ns", "s"], ax=next(axis)
     )
-    metrics.DetCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
-    metrics.PrecisionRecallDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
-    metrics.PredictionErrorDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
-    metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
-    calibration.CalibrationDisplay.from_estimator(model, val_df, val_target, ax=next(axs))
-    model_selection.LearningCurveDisplay.from_estimator(model, train_df, train_target, ax=next(axs))
+    metrics.DetCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axis))
+    metrics.PrecisionRecallDisplay.from_estimator(model, val_df, val_target, ax=next(axis))
+    metrics.PredictionErrorDisplay.from_estimator(model, val_df, val_target, ax=next(axis))
+    metrics.RocCurveDisplay.from_estimator(model, val_df, val_target, ax=next(axis))
+    calibration.CalibrationDisplay.from_estimator(model, val_df, val_target, ax=next(axis))
+    model_selection.LearningCurveDisplay.from_estimator(
+        model, train_df, train_target, ax=next(axis)
+    )
     return scores
 
 

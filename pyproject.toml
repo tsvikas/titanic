@@ -34,6 +34,7 @@ jupytext = "^1.14.5"
 [tool.poetry.group.typing.dependencies]
 mypy = "^1.1.1"
 pandas-stubs = "^1.5.3.230304"
+typing-extensions = "^4.5.0"
 
 [tool.autoflake]
 remove-all-unused-imports = true
