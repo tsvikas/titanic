@@ -48,7 +48,7 @@ from titanic.notebook import DataFrameDisplay, compare_col, create_axs
 # -
 
 
-SPLIT_SEED = 3
+SPLIT_SEED = 0
 
 # ## load the data
 
