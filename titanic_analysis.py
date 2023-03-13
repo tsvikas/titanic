@@ -48,6 +48,8 @@ from titanic.notebook import DataFrameDisplay, compare_col, create_axs
 # -
 
 
+SPLIT_SEED = 3
+
 # ## load the data
 
 input_dir = Path("/kaggle/input/titanic")
@@ -66,7 +68,7 @@ kaggle_train_df.sample(5).sort_index()
 # +
 # add validation for final estimation of the model
 train_df, val_df = train_test_split(
-    kaggle_train_df, test_size=100, stratify=kaggle_train_df.Survived, random_state=0
+    kaggle_train_df, test_size=100, stratify=kaggle_train_df.Survived, random_state=SPLIT_SEED
 )
 train_target = train_df.pop("Survived")
 val_target = val_df.pop("Survived")
@@ -117,7 +119,7 @@ def objective(trial: optuna.Trial) -> float:
 
 objective_name = "accuracy"
 
-study_name = "XGBClassifier-params-with-cabin_even"  # Unique identifier of the study.
+study_name = f"XGBClassifier-params-with-cabin_even-split_{SPLIT_SEED}"
 storage_name = f"sqlite:///cache/{study_name}.db"
 study = optuna.create_study(
     study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
