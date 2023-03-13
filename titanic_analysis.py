@@ -45,7 +45,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.impute import KNNImputer, SimpleImputer
-from sklearn.model_selection import ParameterGrid, cross_validate, train_test_split
+from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import FeatureUnion, Pipeline, make_pipeline
 from xgboost import XGBClassifier
 
@@ -456,41 +456,22 @@ for i in range(3):
 
 # #### which features?
 
-# +
-fn_1 = Path("cache/1.csv")
-params_1 = [
-    "use_family_name",
-    "use_cabin_prefix",
-    "use_cabin_num",
-    "use_cabin_full",
-    "use_ticket_prefix",
-]
-param_grid_1 = ParameterGrid({p: [False, True] for p in params_1})
+preprocess_parameters = list(inspect.signature(build_preprocess).parameters)
+results_1 = DataFrameDisplay(["param"])
+for param_name in ["base"] + preprocess_parameters:
+    model = build_model(
+        transformer=build_preprocess(**{p: p == param_name for p in preprocess_parameters}),
+        classifier=XGBClassifier(),
+    )
+    result = evaluate_model(model, enhance_scores=True)
+    result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
+    results_1.add_row(result, param_name)
 
-if fn_1.exists():
-    results_1 = DataFrameDisplay.load(fn_1, params_1)
-    display(results_1.df)
-else:
-    results_1 = DataFrameDisplay(params_1)
-    for param in param_grid_1:
-        model = build_model(
-            transformer=build_preprocess(**param, scale_numerical_cols=False),
-            classifier=XGBClassifier(),
-        )
-        display("Running...")
-        result = evaluate_model(model, enhance_scores=True)
-        result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
-        results_1.add_row(result, param)
-    results_1.save(fn_1)
-# -
 
 results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
 
-t0 = results_1.df.iloc[0].fit_time
-pd.Series(
-    {p: results_1.df.loc[tuple(pn == p for pn in params_1), "fit_time"] - t0 for p in params_1},
-    name="time_cost",
-)
+(results_1.df - results_1.df.loc["base"])[["fit_time", "accuracy_μ"]].sort_values("fit_time")
+
 
 # #### which hyperparams?
 
