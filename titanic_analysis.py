@@ -130,6 +130,8 @@ study.optimize(objective, n_trials=n_trails, n_jobs=-1)
 
 len(study.trials), study.best_params
 
+study.trials_dataframe().set_index("number").sort_values("value", ascending=False).head()
+
 study.trials_dataframe().set_index("number").tail()
 
 ov.plot_optimization_history(study, target_name=objective_name)
