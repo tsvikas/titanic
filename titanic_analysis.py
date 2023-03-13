@@ -82,7 +82,7 @@ len(train_df), len(val_df)
 
 preprocess_parameters = list(inspect.signature(build_preprocess).parameters)
 results_1 = DataFrameDisplay(["param"])
-for param_name in ["base"] + preprocess_parameters:
+for param_name in ["base", *preprocess_parameters]:
     model = build_model(
         transformer=build_preprocess(**{p: p == param_name for p in preprocess_parameters}),
         classifier=XGBClassifier(),
@@ -119,7 +119,7 @@ def objective(trial: optuna.Trial) -> float:
 objective_name = "accuracy"
 
 study_name = "XGBClassifier-params-with-cabin_even"  # Unique identifier of the study.
-storage_name = "sqlite:///cache/{}.db".format(study_name)
+storage_name = f"sqlite:///cache/{study_name}.db"
 study = optuna.create_study(
     study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
 )

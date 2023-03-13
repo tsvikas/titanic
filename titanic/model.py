@@ -77,19 +77,19 @@ class AddColumns(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         self.func = func
         self.kw_args = kw_args
 
-    def fit(self, X: pd.DataFrame, y: None = None) -> Self:
-        self.feature_names_in_ = list(X.columns)
-        X_transformed = self._transform(X)
-        self.feature_names_out_ = list(X_transformed.columns)
+    def fit(self, x: pd.DataFrame, y: None = None) -> Self:
+        self.feature_names_in_ = list(x.columns)
+        x_transformed = self._transform(x)
+        self.feature_names_out_ = list(x_transformed.columns)
         return self
 
-    def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        return X.join(self.func(X, **self.kw_args))
+    def _transform(self, x: pd.DataFrame) -> pd.DataFrame:
+        return x.join(self.func(x, **self.kw_args))
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X_transformed = self._transform(X)
-        assert list(X_transformed.columns) == self.feature_names_out_
-        return X_transformed
+    def transform(self, x: pd.DataFrame) -> pd.DataFrame:
+        x_transformed = self._transform(x)
+        assert list(x_transformed.columns) == self.feature_names_out_
+        return x_transformed
 
     def get_feature_names_out(
         self, feature_names_in: list[str] | None = None
@@ -169,7 +169,7 @@ def build_preprocess(
                 "c_num_even",
                 preprocessing.FunctionTransformer(
                     lambda sr: (1 - (sr % 2)).fillna(0),
-                    feature_names_out=lambda s, feature_names_in: [
+                    feature_names_out=lambda _s, feature_names_in: [
                         n + "_even" for n in feature_names_in
                     ],
                 ),
@@ -179,7 +179,7 @@ def build_preprocess(
                 "c_num_odd",
                 preprocessing.FunctionTransformer(
                     lambda sr: (sr % 2).fillna(0),
-                    feature_names_out=lambda s, feature_names_in: [
+                    feature_names_out=lambda _s, feature_names_in: [
                         n + "_odd" for n in feature_names_in
                     ],
                 ),
@@ -324,9 +324,7 @@ def build_model(
         transformer = build_preprocess()
     if classifier is None:
         classifier = RandomForestClassifier()
-
-    pipeline = Pipeline([("transformer", transformer), ("classifier", classifier)])
-    return pipeline
+    return Pipeline([("transformer", transformer), ("classifier", classifier)])
 
 
 # ### test model
@@ -357,7 +355,7 @@ def format_scores(scores: npt.NDArray[float], add_low: bool = False) -> str:
 
 def evaluate_model(
     model: sklearn.base.ClassifierMixin,
-    X: pd.DataFrame,
+    x: pd.DataFrame,
     y: pd.Series,
     cv: int = 10,
     random_shuffle: bool | int | None = False,
@@ -365,11 +363,11 @@ def evaluate_model(
     if random_shuffle is not False:
         if random_shuffle is True:
             random_shuffle = None
-        X = X.sample(frac=1, random_state=random_shuffle)
-        y = y.reindex(X.index)
+        x = x.sample(frac=1, random_state=random_shuffle)
+        y = y.reindex(x.index)
     scores = cross_validate(
         model,
-        X,
+        x,
         y,
         cv=cv,
         scoring=["accuracy", "balanced_accuracy", "roc_auc", "f1"],

@@ -55,10 +55,10 @@ f"survived: {kaggle_train_df.Survived.mean():.1%}, not-survived: {1 - kaggle_tra
 
 # +
 def plot_histograms(df, split_col, bins, dropna=False):
-    N_CATEGORICAL = 20
+    n_categorical = 20
     axs = create_axs()
     for col in df:
-        if pd.api.types.is_numeric_dtype(df[col]) and df[col].nunique() > N_CATEGORICAL:
+        if pd.api.types.is_numeric_dtype(df[col]) and df[col].nunique() > n_categorical:
             ax = next(axs)
             df.groupby([split_col], dropna=dropna)[col].plot.hist(
                 density=True,
@@ -72,7 +72,7 @@ def plot_histograms(df, split_col, bins, dropna=False):
             ax.legend(title=split_col)
         else:
             col_df = df.groupby([split_col, col], dropna=dropna).size().unstack(0, fill_value=0)
-            if len(col_df) > N_CATEGORICAL:
+            if len(col_df) > n_categorical:
                 print({"col": col, "n_unique": len(col_df)})
                 print(col_df.sum(1).sort_values(ascending=False).iloc[:5].astype(int).to_dict())
                 print()

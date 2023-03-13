@@ -49,15 +49,14 @@ class DataFrameDisplay:
             row.index.set_names(index_names, inplace=True)
         if self.df is None:
             self.df = row
+        elif all(name is not None for name in self.df.index.names):
+            # we want to align indices
+            old_index_names = self.df.index.names
+            self.df = pd.concat([self.df.reset_index(), row.reset_index()]).set_index(
+                old_index_names
+            )
         else:
-            if all(name is not None for name in self.df.index.names):
-                # we want to align indices
-                old_index_names = self.df.index.names
-                self.df = pd.concat([self.df.reset_index(), row.reset_index()]).set_index(
-                    old_index_names
-                )
-            else:
-                self.df = pd.concat([self.df, row])
+            self.df = pd.concat([self.df, row])
         self.display()
 
     def display(self) -> None:
