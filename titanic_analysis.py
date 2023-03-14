@@ -49,6 +49,7 @@ from titanic.notebook import DataFrameDisplay, compare_col, create_axs
 
 
 SPLIT_SEED = 0
+CHOOSE_FEATURES = False
 
 # ## load the data
 
@@ -81,22 +82,26 @@ len(train_df), len(val_df)
 
 # #### which features?
 
-preprocess_parameters = list(inspect.signature(build_preprocess).parameters)
-results_1 = DataFrameDisplay(["param"])
-for param_name in ["base", *preprocess_parameters]:
-    model = build_model(
-        transformer=build_preprocess(**{p: p == param_name for p in preprocess_parameters}),
-        classifier=XGBClassifier(),
-    )
-    result = evaluate_model(model, train_df, train_target)
-    result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
-    results_1.add_row(result, param_name)
-assert results_1.df is not None
+if CHOOSE_FEATURES:
+    preprocess_parameters = list(inspect.signature(build_preprocess).parameters)
+    results_1 = DataFrameDisplay(["param"])
+    for param_name in ["base", *preprocess_parameters]:
+        model = build_model(
+            transformer=build_preprocess(**{p: p == param_name for p in preprocess_parameters}),
+            classifier=XGBClassifier(),
+        )
+        result = evaluate_model(model, train_df, train_target)
+        result["num_features"] = len(model[:-1].fit(train_df).get_feature_names_out())
+        results_1.add_row(result, param_name)
 
 
-results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
+if CHOOSE_FEATURES:
+    assert results_1.df is not None
+    results_1.df.plot.scatter(x="num_features", y="accuracy_μ", yerr="accuracy_σ")
 
-(results_1.df - results_1.df.loc["base"])[["fit_time", "accuracy_μ"]].sort_values(by="fit_time")
+if CHOOSE_FEATURES:
+    assert results_1.df is not None
+    (results_1.df - results_1.df.loc["base"])[["fit_time", "accuracy_μ"]].sort_values(by="fit_time")
 
 
 # #### which hyperparams?
