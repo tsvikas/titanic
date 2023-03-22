@@ -18,6 +18,8 @@ xgboost = "^1.7.4"
 mlxtend = "^0.21.0"
 xarray = "^2023.2.0"
 optuna = "^3.1.0"
+hvplot = "^0.8.3"
+datashader = "^0.14.4"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.1.0"
