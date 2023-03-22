@@ -305,6 +305,9 @@ def build_preprocess(
     return data_transformer
 
 
+if __name__ == "__main__":
+    display(build_preprocess())
+
 # ### test preprocess
 
 if __name__ == "__main__":
