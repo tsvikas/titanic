@@ -48,7 +48,7 @@ from titanic.notebook import DataFrameDisplay, compare_col, create_axs
 # -
 
 
-SPLIT_SEED = 0
+SPLIT_SEED = 11
 CHOOSE_FEATURES = False
 
 # ## load the data
@@ -108,6 +108,9 @@ if CHOOSE_FEATURES:
 
 
 # +
+CV = 10
+
+
 def objective(trial: optuna.Trial) -> float:
     model = build_model(
         transformer=build_preprocess(),
@@ -117,14 +120,14 @@ def objective(trial: optuna.Trial) -> float:
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 1, log=True),
         ),
     )
-    scores = cross_validate(model, train_df, train_target)
+    scores = cross_validate(model, train_df, train_target, cv=CV)
     score: float = scores["test_score"].mean()
     return score
 
 
 objective_name = "accuracy"
 
-study_name = f"XGBClassifier-params-with-cabin_even-split_{SPLIT_SEED}"
+study_name = f"XGBClassifier-params-with_cabin_even-cv_{CV}-split_{SPLIT_SEED}"
 storage_name = f"sqlite:///cache/{study_name}.db"
 study = optuna.create_study(
     study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
@@ -132,8 +135,6 @@ study = optuna.create_study(
 n_trails = max((-len(study.trials) - 1) % 10 + 1, 100 - len(study.trials))
 study.optimize(objective, n_trials=n_trails, n_jobs=-1)
 # -
-
-len(study.trials), study.best_params
 
 study.trials_dataframe().set_index("number").sort_values("value", ascending=False).head()
 
