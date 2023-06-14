@@ -121,13 +121,13 @@ def objective(trial: optuna.Trial) -> float:
         ),
     )
     scores = cross_validate(model, train_df, train_target, cv=CV)
-    score: float = scores["test_score"].mean()
+    score: float = scores["test_score"].min()
     return score
 
 
 objective_name = "accuracy"
 
-study_name = f"XGBClassifier-params-with_cabin_even-cv_{CV}-split_{SPLIT_SEED}"
+study_name = f"XGBClassifier-params-with_cabin_even-cv_{CV}-min-split_{SPLIT_SEED}"
 storage_name = f"sqlite:///cache/{study_name}.db"
 study = optuna.create_study(
     study_name=study_name, storage=storage_name, direction="maximize", load_if_exists=True
@@ -156,6 +156,8 @@ for col in study.trials_dataframe(multi_index=True)["params"]:
 plt.tight_layout()
 
 ov.plot_param_importances(study, target_name=objective_name)
+
+study.best_params
 
 best_depth = study.best_params["max_depth"]
 marker = dict(marker="o", ms=8, markerfacecolor="None", markeredgecolor="k", markeredgewidth=0.5)

@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn import model_selection
 from sklearn.model_selection import train_test_split
+from tqdm import trange
 from xgboost import XGBClassifier
 
 from titanic.model import build_model
@@ -63,7 +64,7 @@ len(train_df), len(val_df)
 # -
 
 
-# ### find best model
+# ### create best model
 
 # +
 best_params = {"learning_rate": 0.5, "max_depth": 2, "n_estimators": 100}
@@ -106,7 +107,7 @@ def train_and_score(model, n_train):
 train_and_score(model, 500)
 # -
 
-from tqdm import trange
+# ## run on different n_train size
 
 scores = {i: train_and_score(model, i) for i in trange(100, 500)}
 
@@ -172,3 +173,30 @@ fig, ax = plt.subplots()
 # ax = scores3_df.plot.scatter("n_train", "accuracy")
 sns.lineplot(data=scores3_df, x="n_train", y="accuracy", errorbar="sd", ax=ax, label="600")
 sns.lineplot(data=scores2_df, x="n_train", y="accuracy", errorbar="sd", ax=ax, label="891")
+
+(
+    so.Plot(scores3_df, x="n_train", y="accuracy")
+    .add(so.Line(), so.Agg())
+    .add(so.Band(), so.Est(errorbar="sd"))
+)
+
+
+import seaborn.objects as so
+
+pd.concat({600: scores3_df, 891: scores2_df}, names=["n_total"]).reset_index(0).reset_index(
+    drop=True
+).n_total.unique()
+
+(
+    so.Plot(
+        pd.concat({600: scores3_df, 891: scores2_df}, names=["n_total"])
+        .reset_index(0)
+        .reset_index(drop=True),
+        x="n_train",
+        y="accuracy",
+        color="n_total",
+    )
+    .scale(color=so.Nominal())
+    .add(so.Line(), so.Agg())
+    .add(so.Band(), so.Est(errorbar="sd"))
+)
